@@ -1,9 +1,10 @@
-﻿using DentalScheduler.Domain.Entities; 
+﻿using DentalScheduler.Application.Interfaces;
+using DentalScheduler.Domain.Entities; 
 using Microsoft.EntityFrameworkCore;
 
 namespace DentalScheduler.Infrastructure.Persistance;
 
-public class ApplicationDbContext : DbContext
+public class ApplicationDbContext : DbContext, IApplicationDbContext
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)

@@ -1,109 +1,58 @@
+using DentalScheduler.Application;
 using DentalScheduler.Infrastructure;
-using DentalScheduler.Infrastructure.Persistance; // Poate fi necesar, in functie de namespace
+using DentalScheduler.Infrastructure.Persistance;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
-using DotNetEnv;
 
 var builder = WebApplication.CreateBuilder(args);
 
-Console.WriteLine("⏳ Caut fisierul .env...");
-// Cautam .env urcand in directoare pana la radacina solutiei
-var dir = new DirectoryInfo(AppContext.BaseDirectory);
-while (dir != null)
+// Încarcă variabilele din .env dacă există (pentru dezvoltare locală)
+var root = Directory.GetCurrentDirectory();
+var dotenv = Path.Combine(root, "..", ".env");
+if (File.Exists(dotenv))
 {
-    var envPath = Path.Combine(dir.FullName, ".env");
-    if (File.Exists(envPath))
-    {
-        Console.WriteLine($"✅ Fisier .env gasit la: {envPath}");
-        Env.Load(envPath);
-        break;
-    }
-    dir = dir.Parent;
+    DotNetEnv.Env.Load(dotenv);
 }
 
-// Adauga configuratia pentru a citi din Environment Variables
 builder.Configuration.AddEnvironmentVariables();
-Console.WriteLine("⏳ Configurare servicii...");
 
 // Add services to the container.
-builder.Services.AddOpenApi();
+builder.Services.AddControllers(); 
+builder.Services.AddOpenApi("v1"); // <-- MODIFICAT: Specificam un nume pentru document ("v1")
 
-// Aici facem legătura cu Infrastructure
-// Această linie înlocuiește configurarea directă a SQL Server din API
+// Adăugare strat Application (CQRS, MediatR)
+builder.Services.AddApplication();
+
+// Adăugare strat Infrastructură (Database, Repositories, etc.)
 builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 
-Console.WriteLine("⏳ Verific conexiunea la baza de date...");
-// TEST CONEXIUNE BAZA DE DATE
+// Aplică migrarile automat la pornire
 using (var scope = app.Services.CreateScope())
 {
-    try 
-    {
-        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-        // Let's print the connection string to debug (careful, this exposes password in logs temporarily)
-        var connString = builder.Configuration.GetConnectionString("DefaultConnection");
-        Console.WriteLine($"🔍 Connection String folosit (partial ascuns): {connString?.Replace("ParolaStrong123!", "******")}");
-
-        // Create database if not exists
-        try
-        {
-             Console.WriteLine("⏳ Incerc sa creez baza de date si sa aplic migrarile...");
-             await dbContext.Database.MigrateAsync();
-             Console.WriteLine("✅ BAZA DE DATE A FOST CREATA/ACTUALIZATA CU SUCCES!");
-        }
-        catch(Exception ex)
-        {
-             Console.WriteLine($"⚠️ Avertisment la migrare: {ex.Message}");
-        }
-
-        // Try to open connection explicitly to see the exception
-        await dbContext.Database.OpenConnectionAsync();
-        Console.WriteLine("✅ CONEXIUNE REUSITA LA BAZA DE DATE!");
-        await dbContext.Database.CloseConnectionAsync();
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"❌ EROARE DETALIATA: {ex.Message}");
-        if (ex.InnerException != null)
-        {
-            Console.WriteLine($"   Inner Exception: {ex.InnerException.Message}");
-        }
-    }
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await dbContext.Database.MigrateAsync();
 }
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
-    app.MapScalarApiReference();
+    // Mapăm documentul OpenAPI specificat mai sus
+    app.MapOpenApi("/openapi/v1.json"); 
+    
+    // Configurăm Scalar să citească exact acest document
+    app.MapScalarApiReference(options => 
+    {
+        options.WithOpenApiRoutePattern("/openapi/v1.json");
+    });
+    
+    // Redirect automat
+    app.MapGet("/", () => Results.Redirect("/scalar/v1"));
 }
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+app.MapControllers(); // <-- LINIE NOUA: Activează rutele din controllere
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

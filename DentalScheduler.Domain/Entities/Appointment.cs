@@ -1,5 +1,4 @@
-﻿// File: DentalScheduler.Domain/Entities/Appointment.cs
-using System;
+﻿using System;
 
 namespace DentalScheduler.Domain.Entities
 {

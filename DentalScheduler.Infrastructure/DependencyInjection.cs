@@ -1,5 +1,6 @@
 ﻿namespace DentalScheduler.Infrastructure;
 
+using DentalScheduler.Application.Interfaces;
 using DentalScheduler.Infrastructure.Persistance;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -13,6 +14,7 @@ public static class DependencyInjection
             options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"),
                 b => b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
 
+        services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
         return services;
     }
 }
