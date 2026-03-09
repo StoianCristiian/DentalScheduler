@@ -1,7 +1,34 @@
 ﻿@page "/"
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Dental Scheduler - Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="p-5 mb-4 bg-light rounded-3">
+    <div class="container-fluid py-5">
+        <h1 class="display-5 fw-bold">Dental Scheduler</h1>
+        <p class="col-md-8 fs-4">Bine ați venit la sistemul nostru modern de programări stomatologice, asistat de Inteligență Artificială.</p>
+        <button class="btn btn-primary btn-lg" type="button">Fă o programare</button>
+        <AuthorizeView>
+            <NotAuthorized>
+                <a href="login" class="btn btn-outline-secondary btn-lg ms-2">Autentificare</a>
+                <a href="register" class="btn btn-secondary btn-lg ms-2">Inregistrare</a>
+            </NotAuthorized>
+        </AuthorizeView>
+    </div>
+</div>
 
-Welcome to your new app.
+<div class="row align-items-md-stretch">
+    <div class="col-md-6">
+        <div class="h-100 p-5 text-white bg-dark rounded-3">
+            <h2>Pentru Pacienți</h2>
+            <p>Găsește rapid un interval liber și lasă AI-ul să îți propună cea mai bună oră pentru tine, evitând suprapunerile.</p>
+            <button class="btn btn-outline-light" type="button">Vezi servicii</button>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="h-100 p-5 bg-light border rounded-3">
+            <h2>Pentru Medici</h2>
+            <p>Gestionează programările, vizualizează orarul și optimizează fluxul de pacienți cu ajutorul dashboard-ului nostru.</p>
+            <button class="btn btn-outline-dark" type="button">Accesează Dashboard</button>
+        </div>
+    </div>
+</div>

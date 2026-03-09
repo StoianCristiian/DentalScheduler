@@ -1,0 +1,90 @@
+﻿@page "/register"
+@using System.ComponentModel.DataAnnotations
+@inject HttpClient Http
+
+<h3>Creează cont</h3>
+
+<div class="row">
+    <div class="col-md-5">
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger">@errorMessage</div>
+        }
+        
+        @if (showSuccess)
+        {
+             <div class="alert alert-success">
+                 Cont creat cu succes! <a href="login">Autentifică-te aici</a>.
+             </div>
+        }
+        else
+        {
+            <EditForm Model="@registerModel" OnValidSubmit="HandleRegister">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <InputText id="email" class="form-control" @bind-Value="registerModel.Email" />
+                </div>
+                
+                <div class="mb-3">
+                    <label for="password" class="form-label">Parola</label>
+                    <InputText id="password" type="password" class="form-control" @bind-Value="registerModel.Password" />
+                </div>
+                
+                <div class="mb-3">
+                     <label for="confirmPassword" class="form-label">Confirmă Parola</label>
+                     <InputText id="confirmPassword" type="password" class="form-control" @bind-Value="registerModel.ConfirmPassword" />
+                </div>
+
+                <button type="submit" class="btn btn-primary">Înregistrează-te</button>
+            </EditForm>
+        }
+    </div>
+</div>
+
+@code {
+    private RegisterModel registerModel = new();
+    private string? errorMessage;
+    private bool showSuccess = false;
+
+    private async Task HandleRegister()
+    {
+        errorMessage = null;
+        
+        try 
+        {
+            // Endpoint-ul default de Identity este /register și așteaptă { email, password }
+            var response = await Http.PostAsJsonAsync("/api/auth/register", new { email = registerModel.Email, password = registerModel.Password });
+
+            if (response.IsSuccessStatusCode)
+            {
+                showSuccess = true;
+            }
+            else
+            {
+                // Simplă tratare a erorilor.
+                errorMessage = $"Eroare la înregistrare: {response.ReasonPhrase}. Verifică datele introduse.";
+            }
+        }
+        catch (Exception ex)
+        {
+             errorMessage = $"A apărut o eroare: {ex.Message}";
+        }
+    }
+    
+    public class RegisterModel
+    {
+        [Required(ErrorMessage = "Email-ul este obligatoriu.")]
+        [EmailAddress(ErrorMessage = "Formatul email-ului nu este valid.")]
+        public string Email { get; set; } = "";
+
+        [Required(ErrorMessage = "Parola este obligatorie.")]
+        [MinLength(6, ErrorMessage = "Parola trebuie să aibă minim 6 caractere.")]
+        public string Password { get; set; } = "";
+        
+        [Compare(nameof(Password), ErrorMessage = "Parolele nu coincid.")]
+        public string ConfirmPassword { get; set; } = "";
+    }
+}

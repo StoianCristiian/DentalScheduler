@@ -1,31 +1,54 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
+@using DentalScheduler.Client.Auth
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+@using Blazored.LocalStorage
+@inject ILocalStorageService LocalStorage
+
+<nav class="navbar navbar-expand-md navbar-dark bg-dark mb-4">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">DentalScheduler.Client</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+        <a class="navbar-brand" href="">DentalScheduler</a>
+        <button class="navbar-toggler" @onclick="ToggleNavMenu">
             <span class="navbar-toggler-icon"></span>
         </button>
+        <div class="@NavMenuCssClass navbar-collapse" @onclick="ToggleNavMenu">
+            <ul class="navbar-nav me-auto mb-2 mb-md-0">
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                        <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+                    </NavLink>
+                </li>
+                <li class="nav-item">
+                     <NavLink class="nav-link" href="appointments">
+                         <span class="bi bi-calendar3-fill-nav-menu" aria-hidden="true"></span> Programări
+                     </NavLink>
+                </li>
+            </ul>
+            
+            <ul class="navbar-nav ms-auto mb-2 mb-md-0">
+                <AuthorizeView>
+                    <Authorized>
+                        <li class="nav-item">
+                            <span class="navbar-text me-3">Salut, @GetUserName(context.User)!</span>
+                        </li>
+                        <li class="nav-item">
+                            <button class="btn btn-link nav-link" @onclick="Logout">Logout</button>
+                        </li>
+                    </Authorized>
+                    <NotAuthorized>
+                        <li class="nav-item">
+                            <NavLink class="nav-link" href="login">Login</NavLink>
+                        </li>
+                        <li class="nav-item">
+                            <NavLink class="nav-link" href="register">Register</NavLink>
+                        </li>
+                    </NotAuthorized>
+                </AuthorizeView>
+            </ul>
+        </div>
     </div>
-</div>
-
-<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
-    <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
-    </nav>
-</div>
+</nav>
 
 @code {
     private bool collapseNavMenu = true;
@@ -37,4 +60,37 @@
         collapseNavMenu = !collapseNavMenu;
     }
 
+    private string GetUserName(ClaimsPrincipal user)
+    {
+        // Debugging: verificam ce avem in user.Identity.Name si in claim-uri
+        var name = user.Identity?.Name;
+        
+        // Daca name e null, incercam sa cautam manual in claims
+        if (string.IsNullOrEmpty(name))
+        {
+            // Verificam toate claim-urile posibile pentru email/nume
+            name = user.FindFirst(c => c.Type == "email")?.Value ?? 
+                   user.FindFirst(c => c.Type == "unique_name")?.Value ??
+                   user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value ??
+                   user.FindFirst(c => c.Type == ClaimTypes.Name)?.Value ??
+                   user.FindFirst(c => c.Type == "name")?.Value ??
+                   user.FindFirst(c => c.Type == "sub")?.Value; // Uneori ID-ul e in sub
+        }
+
+        if (string.IsNullOrWhiteSpace(name)) return "Utilizator";
+
+        var atIndex = name.IndexOf('@');
+        if (atIndex >= 0)
+        {
+            return name.Substring(0, atIndex);
+        }
+        return name;
+    }
+
+    private async Task Logout()
+    {
+        await LocalStorage.RemoveItemAsync("authToken");
+        ((CustomAuthenticationStateProvider)AuthStateProvider).MarkUserAsLoggedOut();
+        Navigation.NavigateTo("/");
+    }
 }

@@ -10,6 +10,5 @@ namespace DentalScheduler.Domain.Entities
         public DateTime StartAt { get; set; }
         public DateTime EndAt { get; set; }
         public string? Notes { get; set; }
-        public string ? PatientName { get; set; }
     }
 }
