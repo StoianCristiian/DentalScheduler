@@ -1,0 +1,277 @@
+﻿@page "/doctor-dashboard"
+@using Microsoft.AspNetCore.Authorization
+@using System.Net.Http.Json
+@using Blazored.LocalStorage
+@attribute [Authorize(Roles = "Doctor")]
+@inject HttpClient Http
+@inject ILocalStorageService LocalStorage
+
+<PageTitle>Dashboard Medic</PageTitle>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">🦷 Dashboard Medic</h2>
+        <button class="btn btn-outline-secondary" @onclick="LoadAppointments">
+            <i class="bi bi-arrow-clockwise"></i> Reîncarcă
+        </button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success alert-dismissible">
+            @successMessage
+            <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
+        </div>
+    }
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible">
+            @errorMessage
+            <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+        </div>
+    }
+
+    @* Stats Cards *@
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-bg-warning shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fs-2 fw-bold">@appointments.Count(a => a.Status == 0)</div>
+                        <div>În aşteptare</div>
+                    </div>
+                    <i class="bi bi-hourglass-split fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-success shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fs-2 fw-bold">@appointments.Count(a => a.Status == 1)</div>
+                        <div>Acceptate</div>
+                    </div>
+                    <i class="bi bi-check-circle fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-danger shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fs-2 fw-bold">@appointments.Count(a => a.Status == 2)</div>
+                        <div>Respinse</div>
+                    </div>
+                    <i class="bi bi-x-circle fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-primary shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fs-2 fw-bold">@appointments.Count</div>
+                        <div>Total</div>
+                    </div>
+                    <i class="bi bi-calendar3 fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* Filter Tabs *@
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+            <button class="nav-link @(activeFilter == -1 ? "active" : "")" @onclick="() => activeFilter = -1">
+                Toate (@appointments.Count)
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link @(activeFilter == 0 ? "active" : "")" @onclick="() => activeFilter = 0">
+                În aşteptare (@appointments.Count(a => a.Status == 0))
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link @(activeFilter == 1 ? "active" : "")" @onclick="() => activeFilter = 1">
+                Acceptate (@appointments.Count(a => a.Status == 1))
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link @(activeFilter == 2 ? "active" : "")" @onclick="() => activeFilter = 2">
+                Respinse (@appointments.Count(a => a.Status == 2))
+            </button>
+        </li>
+    </ul>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            @if (isLoading)
+            {
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary"></div>
+                    <p class="mt-2">Se încarcă programările...</p>
+                </div>
+            }
+            else if (!FilteredAppointments.Any())
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-calendar-check fs-1 text-muted"></i>
+                    <p class="mt-3 text-muted">Nu există programări în această categorie.</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Pacient</th>
+                                <th>Tratament</th>
+                                <th>Data</th>
+                                <th>Ora</th>
+                                <th>Note</th>
+                                <th>Status</th>
+                                <th class="text-center">Acţiuni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var appt in FilteredAppointments)
+                            {
+                                <tr>
+                                    <td>
+                                        <span class="fw-semibold">@(appt.PatientName ?? "Pacient necunoscut")</span>
+                                    </td>
+                                    <td>@(appt.TreatmentType ?? "—")</td>
+                                    <td>@appt.StartAt.ToShortDateString()</td>
+                                    <td>@appt.StartAt.ToShortTimeString()</td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(appt.Notes))
+                                        {
+                                            <span class="text-muted small" title="@appt.Notes">
+                                                @(appt.Notes.Length > 30 ? appt.Notes[..30] + "..." : appt.Notes)
+                                            </span>
+                                        }
+                                        else { <span class="text-muted">—</span> }
+                                    </td>
+                                    <td>
+                                        <span class="badge @GetStatusClass(appt.Status)">@GetStatusLabel(appt.Status)</span>
+                                    </td>
+                                    <td class="text-center">
+                                        @if (appt.Status == 0)
+                                        {
+                                            <button class="btn btn-success btn-sm me-1"
+                                                    @onclick="() => UpdateStatus(appt.Id, 1)"
+                                                    disabled="@(processingId == appt.Id)">
+                                                @if (processingId == appt.Id)
+                                                { <span class="spinner-border spinner-border-sm"></span> }
+                                                else { <i class="bi bi-check-lg"></i> }
+                                                Acceptă
+                                            </button>
+                                            <button class="btn btn-danger btn-sm"
+                                                    @onclick="() => UpdateStatus(appt.Id, 2)"
+                                                    disabled="@(processingId == appt.Id)">
+                                                <i class="bi bi-x-lg"></i> Respinge
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">Finalizat</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<AppointmentDto> appointments = new();
+    private bool isLoading = true;
+    private int activeFilter = -1;
+    private string? successMessage;
+    private string? errorMessage;
+    private Guid? processingId;
+    private string? currentUserId;
+
+    private IEnumerable<AppointmentDto> FilteredAppointments =>
+        activeFilter == -1 ? appointments : appointments.Where(a => a.Status == activeFilter);
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentUserId = await LocalStorage.GetItemAsync<string>("userId");
+        await LoadAppointments();
+    }
+
+    private async Task LoadAppointments()
+    {
+        isLoading = true;
+        errorMessage = null;
+        try
+        {
+            if (!string.IsNullOrEmpty(currentUserId))
+                appointments = await Http.GetFromJsonAsync<List<AppointmentDto>>($"api/appointments/doctor/{currentUserId}") ?? new();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Eroare la încărcarea programărilor: {ex.Message}";
+        }
+        finally { isLoading = false; }
+    }
+
+    private async Task UpdateStatus(Guid appointmentId, int status)
+    {
+        processingId = appointmentId;
+        errorMessage = null;
+        try
+        {
+            var response = await Http.PutAsJsonAsync($"api/appointments/{appointmentId}/status", new { Status = status });
+            if (response.IsSuccessStatusCode)
+            {
+                var appt = appointments.FirstOrDefault(a => a.Id == appointmentId);
+                if (appt != null) appt.Status = status;
+                successMessage = status == 1 ? "Programarea a fost acceptată!" : "Programarea a fost respinsă.";
+            }
+            else
+            {
+                errorMessage = "A apărut o eroare la actualizarea statusului.";
+            }
+        }
+        catch (Exception ex) { errorMessage = ex.Message; }
+        finally { processingId = null; }
+    }
+
+    private string GetStatusClass(int status) => status switch
+    {
+        1 => "bg-success",
+        2 => "bg-danger",
+        3 => "bg-secondary",
+        _ => "bg-warning text-dark"
+    };
+
+    private string GetStatusLabel(int status) => status switch
+    {
+        1 => "Acceptat",
+        2 => "Respins",
+        3 => "Anulat",
+        _ => "În aşteptare"
+    };
+
+    public class AppointmentDto
+    {
+        public Guid Id { get; set; }
+        public Guid PatientId { get; set; }
+        public Guid DentistId { get; set; }
+        public DateTime StartAt { get; set; }
+        public DateTime EndAt { get; set; }
+        public string? Notes { get; set; }
+        public string? TreatmentType { get; set; }
+        public int Status { get; set; }
+        public string? PatientName { get; set; }
+        public string? DentistName { get; set; }
+    }
+}
+

@@ -17,9 +17,26 @@ public class GetAppointmentsQueryHandler : IRequestHandler<GetAppointmentsQuery,
 
     public async Task<List<AppointmentDto>> Handle(GetAppointmentsQuery request, CancellationToken cancellationToken)
     {
-        var appointments = await _context.Appointments
+        var appointments = await _context.Appointments.ToListAsync(cancellationToken);
+
+        var userIds = appointments
+            .Select(a => a.PatientId.ToString())
+            .Concat(appointments.Select(a => a.DentistId.ToString()))
+            .Distinct()
+            .ToList();
+
+        var users = await _context.Users
+            .Where(u => userIds.Contains(u.Id))
+            .Select(u => new { u.Id, u.FirstName, u.LastName })
             .ToListAsync(cancellationToken);
 
-        return appointments.Select(a => a.ToDto()).ToList();
+        var userMap = users.ToDictionary(u => u.Id, u => $"{u.FirstName} {u.LastName}".Trim());
+
+        return appointments
+            .Select(a => a.ToDto(
+                userMap.GetValueOrDefault(a.PatientId.ToString()),
+                userMap.GetValueOrDefault(a.DentistId.ToString())))
+            .ToList();
     }
 }
+

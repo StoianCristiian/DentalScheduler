@@ -8,29 +8,23 @@ using Scalar.AspNetCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // Încarcă variabilele din .env dacă există (pentru dezvoltare locală)
-var root = Directory.GetCurrentDirectory();
-var dotenv = Path.Combine(root, "..", ".env");
+var dotenv = Path.Combine(Directory.GetCurrentDirectory(), "..", ".env");
 if (File.Exists(dotenv))
-{
     DotNetEnv.Env.Load(dotenv);
-}
 
 builder.Configuration.AddEnvironmentVariables();
 
 // Add services to the container.
-builder.Services.AddControllers(); 
-builder.Services.AddOpenApi("v1"); // <-- MODIFICAT: Specificam un nume pentru document ("v1")
+builder.Services.AddControllers();
+builder.Services.AddOpenApi("v1");
 
 // Configurare CORS pentru a permite accesul din Frontend
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowBlazorClient",
-        policy =>
-        {
-            policy.WithOrigins("http://localhost:5289", "https://localhost:7085") // Porturile Client-ului
-                  .AllowAnyHeader()
-                  .AllowAnyMethod();
-        });
+    options.AddPolicy("AllowBlazorClient", policy =>
+        policy.WithOrigins("http://localhost:5289", "https://localhost:7085")
+              .AllowAnyHeader()
+              .AllowAnyMethod());
 });
 
 // Adăugare strat Application (CQRS, MediatR)
@@ -48,13 +42,11 @@ app.UseCors("AllowBlazorClient");
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Aplică migrarile automat la pornire
+// Aplică migrările și seeding-ul la pornire
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     await dbContext.Database.MigrateAsync();
-
-    // Rulam seeding-ul pentru a crea rolurile si user-ul admin
     await DbInitializer.SeedAsync(scope.ServiceProvider);
 }
 

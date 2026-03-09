@@ -1,115 +1,158 @@
 ﻿@page "/appointments"
 @using Microsoft.AspNetCore.Authorization
+@using System.Net.Http.Json
+@using System.ComponentModel.DataAnnotations
+@using System.Text.Json
+@using Blazored.LocalStorage
 @attribute [Authorize]
+@inject HttpClient Http
+@inject ILocalStorageService LocalStorage
 
-<PageTitle>Programări</PageTitle>
+<PageTitle>Programările Mele</PageTitle>
 
 <div class="container mt-4">
-    <div class="row">
-        <div class="col-md-12">
-            <h1>Programările Mele</h1>
-            <p>Aici vei putea vizualiza și gestiona programările tale.</p>
-        </div>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">📅 Programările Mele</h2>
+        <button class="btn btn-primary" @onclick="ShowModal">
+            <i class="bi bi-plus-lg"></i> Programare Nouă
+        </button>
     </div>
 
-    <div class="row mt-4">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Listă Programări</h5>
-                    <button class="btn btn-light btn-sm" @onclick="ShowNewAppointmentModal">
-                        <i class="bi bi-plus-lg"></i> Programare Nouă
-                    </button>
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success alert-dismissible">
+            @successMessage
+            <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
+        </div>
+    }
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible">
+            @errorMessage
+            <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+        </div>
+    }
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            @if (isLoading)
+            {
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary"></div>
+                    <p class="mt-2">Se încarcă programările...</p>
                 </div>
-                <div class="card-body">
-                    @if (appointments == null)
-                    {
-                        <p><em>Se încarcă...</em></p>
-                    }
-                    else if (appointments.Count == 0)
-                    {
-                        <div class="alert alert-info">
-                            Nu ai nicio programare viitoare. Folosește butonul "Programare Nouă" pentru a crea una.
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Dată</th>
-                                        <th>Oră</th>
-                                        <th>Medic</th>
-                                        <th>Tratament</th>
-                                        <th>Status</th>
-                                        <th>Acțiuni</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var appt in appointments)
-                                    {
-                                        <tr>
-                                            <td>@appt.ScheduledTime.ToShortDateString()</td>
-                                            <td>@appt.ScheduledTime.ToShortTimeString()</td>
-                                            <td>Dr. @appt.DoctorName</td>
-                                            <td>@appt.TreatmentType</td>
-                                            <td>
-                                                <span class="badge @GetStatusClass(appt.Status)">@appt.Status</span>
-                                            </td>
-                                            <td>
-                                                <button class="btn btn-outline-danger btn-sm" @onclick="() => CancelAppointment(appt.Id)">Anulează</button>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
+            }
+            else if (appointments == null || appointments.Count == 0)
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-calendar-x fs-1 text-muted"></i>
+                    <p class="mt-3 text-muted">Nu ai nicio programare. Apasă "Programare Nouă" pentru a crea una.</p>
                 </div>
-            </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Data</th>
+                                <th>Ora</th>
+                                <th>Medic</th>
+                                <th>Tratament</th>
+                                <th>Note</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var appt in appointments)
+                            {
+                                <tr>
+                                    <td>@appt.StartAt.ToShortDateString()</td>
+                                    <td>@appt.StartAt.ToShortTimeString()</td>
+                                    <td>Dr. @(appt.DentistName ?? "—")</td>
+                                    <td>@(appt.TreatmentType ?? "—")</td>
+                                    <td>@(appt.Notes ?? "—")</td>
+                                    <td><span class="badge @GetStatusClass(appt.Status)">@GetStatusLabel(appt.Status)</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
         </div>
     </div>
 </div>
 
-@* Modal Simulat pentru Programare Nouă *@
+@* Modal Programare Nouă *@
 @if (showModal)
 {
-    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal show d-block" tabindex="-1" style="background-color:rgba(0,0,0,0.5);">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header">
+                <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title">Programare Nouă</h5>
-                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseModal"></button>
                 </div>
                 <div class="modal-body">
-                    <form>
+                    <EditForm Model="@newAppt" OnValidSubmit="SaveAppointment">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger" />
+
                         <div class="mb-3">
-                            <label for="date" class="form-label">Data dorită</label>
-                            <input type="date" class="form-control" id="date">
-                        </div>
-                        <div class="mb-3">
-                            <label for="treatment" class="form-label">Tip Tratament</label>
-                            <select class="form-select" id="treatment">
-                                <option selected>Alege...</option>
-                                <option value="1">Control periodic</option>
-                                <option value="2">Detartraj</option>
-                                <option value="3">Obturație (Plombă)</option>
+                            <label class="form-label">Medic <span class="text-danger">*</span></label>
+                            <select class="form-select" @bind="newAppt.DentistId" required>
+                                <option value="">-- Alege medicul --</option>
+                                @foreach (var d in doctors)
+                                {
+                                    <option value="@d.Id">Dr. @d.FullName</option>
+                                }
                             </select>
                         </div>
-                         <div class="mb-3">
-                            <label for="doctor" class="form-label">Medic preferat (Opțional)</label>
-                            <select class="form-select" id="doctor">
-                                <option selected>Oricare disponibil</option>
-                                <option value="1">Dr. Popescu</option>
-                                <option value="2">Dr. Ionescu</option>
+
+                        <div class="mb-3">
+                            <label class="form-label">Tip Tratament <span class="text-danger">*</span></label>
+                            <select class="form-select" @bind="newAppt.TreatmentType">
+                                <option value="">-- Alege tratamentul --</option>
+                                <option value="Control periodic">Control periodic</option>
+                                <option value="Detartraj">Detartraj</option>
+                                <option value="Obturaţie (Plombă)">Obturaţie (Plombă)</option>
+                                <option value="Extracţie">Extracţie</option>
+                                <option value="Implant">Implant</option>
+                                <option value="Albire dentară">Albire dentară</option>
+                                <option value="Consultaţie">Consultaţie</option>
                             </select>
                         </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" @onclick="CloseModal">Închide</button>
-                    <button type="button" class="btn btn-primary" @onclick="SaveAppointment">Salvează</button>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Data <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" @bind="newAppt.Date" min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Ora <span class="text-danger">*</span></label>
+                                <select class="form-select" @bind="newAppt.Hour">
+                                    @for (int h = 8; h <= 17; h++)
+                                    {
+                                        var hour = h;
+                                        <option value="@hour">@hour.ToString("D2"):00</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Note (opţional)</label>
+                            <textarea class="form-control" rows="2" @bind="newAppt.Notes"></textarea>
+                        </div>
+
+                        <div class="modal-footer px-0 pb-0">
+                            <button type="button" class="btn btn-secondary" @onclick="CloseModal">Anulează</button>
+                            <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                                @if (isSaving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                                Trimite Cererea
+                            </button>
+                        </div>
+                    </EditForm>
                 </div>
             </div>
         </div>
@@ -117,73 +160,153 @@
 }
 
 @code {
-    private List<AppointmentDto>? appointments;
+    private List<AppointmentDto> appointments = new();
+    private List<DoctorDto> doctors = new();
     private bool showModal = false;
+    private bool isLoading = true;
+    private bool isSaving = false;
+    private string? successMessage;
+    private string? errorMessage;
+    private NewAppointmentModel newAppt = new();
+    private string? currentUserId;
 
     protected override async Task OnInitializedAsync()
     {
-        // Simulam incarcarea datelor (mock data)
-        await Task.Delay(500);
-        appointments = new List<AppointmentDto>
+        // Acum userId e setat corect de /api/auth/me la login
+        currentUserId = await LocalStorage.GetItemAsync<string>("userId");
+
+        // Fallback: incercam din userClaims
+        if (string.IsNullOrEmpty(currentUserId))
         {
-            new AppointmentDto { Id = Guid.NewGuid(), ScheduledTime = DateTime.Now.AddDays(2).AddHours(4), DoctorName = "Popescu Andrei", TreatmentType = "Control Periodic", Status = "Confirmat" },
-            new AppointmentDto { Id = Guid.NewGuid(), ScheduledTime = DateTime.Now.AddDays(5).AddHours(-1), DoctorName = "Ionescu Maria", TreatmentType = "Detartraj", Status = "În așteptare" }
-        };
-    }
-
-    private void ShowNewAppointmentModal()
-    {
-        showModal = true;
-    }
-
-    private void CloseModal()
-    {
-        showModal = false;
-    }
-
-    private void SaveAppointment()
-    {
-        // Aici vom implementa logica de salvare mai tarziu
-        showModal = false;
-        // Simulam adaugarea
-        appointments?.Add(new AppointmentDto 
-        { 
-            Id = Guid.NewGuid(), 
-            ScheduledTime = DateTime.Now.AddDays(10), 
-            DoctorName = "Dr. Nou", 
-            TreatmentType = "Tratament Nou", 
-            Status = "În așteptare" 
-        });
-    }
-
-    private void CancelAppointment(Guid id)
-    {
-        // Simulam anularea
-        var appt = appointments?.FirstOrDefault(a => a.Id == id);
-        if (appt != null)
-        {
-            appt.Status = "Anulat";
+            var storedClaims = await LocalStorage.GetItemAsync<List<StoredClaim>>("userClaims");
+            currentUserId = storedClaims?.FirstOrDefault(c => c.Type == "sub")?.Value;
         }
+
+        await LoadDoctors();
+        await LoadAppointments();
     }
 
-    private string GetStatusClass(string status)
+    private async Task LoadDoctors()
     {
-        return status switch
-        {
-            "Confirmat" => "bg-success",
-            "În așteptare" => "bg-warning text-dark",
-            "Anulat" => "bg-danger",
-            _ => "bg-secondary"
-        };
+        try { doctors = await Http.GetFromJsonAsync<List<DoctorDto>>("api/doctors") ?? new(); }
+        catch { doctors = new(); }
     }
+
+    private async Task LoadAppointments()
+    {
+        isLoading = true;
+        try
+        {
+            if (!string.IsNullOrEmpty(currentUserId))
+                appointments = await Http.GetFromJsonAsync<List<AppointmentDto>>($"api/appointments/patient/{currentUserId}") ?? new();
+        }
+        catch (Exception ex) { errorMessage = $"Eroare la încărcarea programărilor: {ex.Message}"; }
+        finally { isLoading = false; }
+    }
+
+    private void ShowModal() { newAppt = new(); showModal = true; }
+    private void CloseModal() { showModal = false; }
+
+    private async Task SaveAppointment()
+    {
+        if (string.IsNullOrEmpty(newAppt.DentistId) || string.IsNullOrEmpty(newAppt.TreatmentType) || newAppt.Date == default)
+        {
+            errorMessage = "Completează toate câmpurile obligatorii.";
+            return;
+        }
+
+        if (string.IsNullOrEmpty(currentUserId) || !Guid.TryParse(currentUserId, out var patientGuid))
+        {
+            errorMessage = "Sesiunea a expirat. Te rugăm să te autentifici din nou.";
+            return;
+        }
+
+        if (!Guid.TryParse(newAppt.DentistId, out var dentistGuid))
+        {
+            errorMessage = "Medicul selectat nu este valid.";
+            return;
+        }
+
+        isSaving = true;
+        try
+        {
+            var startAt = newAppt.Date.Date.AddHours(newAppt.Hour);
+            var command = new
+            {
+                PatientId = patientGuid,
+                DentistId = dentistGuid,
+                StartAt = startAt,
+                EndAt = startAt.AddHours(1),
+                Notes = newAppt.Notes,
+                TreatmentType = newAppt.TreatmentType
+            };
+
+            var response = await Http.PostAsJsonAsync("api/appointments", command);
+            if (response.IsSuccessStatusCode)
+            {
+                successMessage = "Programarea a fost trimisă cu succes și aşteaptă confirmare!";
+                showModal = false;
+                await LoadAppointments();
+            }
+            else
+            {
+                var err = await response.Content.ReadAsStringAsync();
+                errorMessage = $"Eroare la salvarea programării: {err}";
+            }
+        }
+        catch (Exception ex) { errorMessage = ex.Message; }
+        finally { isSaving = false; }
+    }
+
+    private string GetStatusClass(int status) => status switch
+    {
+        1 => "bg-success",
+        2 => "bg-danger",
+        3 => "bg-secondary",
+        _ => "bg-warning text-dark"
+    };
+
+    private string GetStatusLabel(int status) => status switch
+    {
+        1 => "Acceptat",
+        2 => "Respins",
+        3 => "Anulat",
+        _ => "În aşteptare"
+    };
 
     public class AppointmentDto
     {
         public Guid Id { get; set; }
-        public DateTime ScheduledTime { get; set; }
-        public string DoctorName { get; set; } = string.Empty;
-        public string TreatmentType { get; set; } = string.Empty;
-        public string Status { get; set; } = string.Empty;
+        public Guid PatientId { get; set; }
+        public Guid DentistId { get; set; }
+        public DateTime StartAt { get; set; }
+        public DateTime EndAt { get; set; }
+        public string? Notes { get; set; }
+        public string? TreatmentType { get; set; }
+        public int Status { get; set; }
+        public string? PatientName { get; set; }
+        public string? DentistName { get; set; }
+    }
+
+    public class DoctorDto
+    {
+        public string Id { get; set; } = "";
+        public string FullName { get; set; } = "";
+        public string Email { get; set; } = "";
+    }
+
+    public class NewAppointmentModel
+    {
+        public string DentistId { get; set; } = "";
+        public string TreatmentType { get; set; } = "";
+        public DateTime Date { get; set; } = DateTime.Today.AddDays(1);
+        public int Hour { get; set; } = 9;
+        public string? Notes { get; set; }
+    }
+
+    public class StoredClaim
+    {
+        public string Type { get; set; } = "";
+        public string Value { get; set; } = "";
     }
 }
-
