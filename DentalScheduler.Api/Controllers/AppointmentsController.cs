@@ -22,7 +22,7 @@ public class AppointmentsController : ControllerBase
         var id = await _mediator.Send(command);
         return Ok(id);
     }
-
+    
     [HttpGet]
     public async Task<ActionResult<List<AppointmentDto>>> GetAll()
     {
