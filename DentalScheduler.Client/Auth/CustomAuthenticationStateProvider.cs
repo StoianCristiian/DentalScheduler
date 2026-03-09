@@ -11,8 +11,6 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
 {
     private readonly ILocalStorageService _localStorage;
     private readonly HttpClient _http;
-    
-    // Cache pentru user info ca sa nu facem request la fiecare refresh de stare
     private UserInfo? _cachedUserInfo;
 
     public CustomAuthenticationStateProvider(ILocalStorageService localStorage, HttpClient http)
@@ -26,52 +24,60 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
         string token = await _localStorage.GetItemAsync<string>("authToken");
 
         if (string.IsNullOrWhiteSpace(token))
-        {
             return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
-        }
 
         _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        try 
+        try
         {
-            // Dacă nu avem user info cache-uit, îl cerem de la server
             if (_cachedUserInfo == null)
             {
                 var response = await _http.GetAsync("api/auth/manage/info");
                 if (response.IsSuccessStatusCode)
-                {
                     _cachedUserInfo = await response.Content.ReadFromJsonAsync<UserInfo>();
-                }
             }
-            
+
             var claims = new List<Claim>();
-            
+
             if (_cachedUserInfo != null && !string.IsNullOrEmpty(_cachedUserInfo.Email))
             {
-                // Setam si Name si Email pentru compatibilitate maxima
                 claims.Add(new Claim(ClaimTypes.Name, _cachedUserInfo.Email));
                 claims.Add(new Claim(ClaimTypes.Email, _cachedUserInfo.Email));
             }
-            
+
+            // Incarcam claims stocate din JWT (roluri, sub, etc.)
+            var storedClaims = await _localStorage.GetItemAsync<List<StoredClaim>>("userClaims");
+            if (storedClaims != null)
+            {
+                foreach (var c in storedClaims)
+                {
+                    // Identity Bearer pune rolurile in "role" - le mapam la ClaimTypes.Role
+                    // pentru ca AuthorizeView Roles="..." sa functioneze corect
+                    if (c.Type == "role")
+                        claims.Add(new Claim(ClaimTypes.Role, c.Value));
+                    else
+                        claims.Add(new Claim(c.Type, c.Value));
+                }
+            }
+
             var identity = new ClaimsIdentity(claims, "Bearer");
-            
             return new AuthenticationState(new ClaimsPrincipal(identity));
         }
-        catch 
+        catch
         {
-            // Daca token-ul e invalid sau request-ul esueaza
             await _localStorage.RemoveItemAsync("authToken");
+            await _localStorage.RemoveItemAsync("userClaims");
+            await _localStorage.RemoveItemAsync("userId");
             _http.DefaultRequestHeaders.Authorization = null;
             _cachedUserInfo = null;
             return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
         }
     }
 
-    public void MarkUserAsAuthenticated(string token)
+    public void MarkUserAsAuthenticated(string token, List<StoredClaim> claims)
     {
         _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        
-        // Fortam re-evaluarea starii, ceea ce va declansa fetch-ul de info
+        _cachedUserInfo = null;
         NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
     }
 
@@ -79,10 +85,8 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
     {
         _http.DefaultRequestHeaders.Authorization = null;
         _cachedUserInfo = null;
-        
         var anonymousUser = new ClaimsPrincipal(new ClaimsIdentity());
-        var authState = Task.FromResult(new AuthenticationState(anonymousUser));
-        NotifyAuthenticationStateChanged(authState);
+        NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(anonymousUser)));
     }
 
     private class UserInfo
@@ -90,4 +94,10 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
         public string Email { get; set; } = "";
         public bool IsEmailConfirmed { get; set; }
     }
+}
+
+public class StoredClaim
+{
+    public string Type { get; set; } = "";
+    public string Value { get; set; } = "";
 }

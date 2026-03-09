@@ -1,62 +1,99 @@
 ﻿@page "/register"
 @using System.ComponentModel.DataAnnotations
 @inject HttpClient Http
+@inject NavigationManager Navigation
 
-<h3>Creează cont</h3>
+<PageTitle>Înregistrare</PageTitle>
 
-<div class="row">
+<div class="row justify-content-center mt-5">
     <div class="col-md-5">
-        @if (!string.IsNullOrEmpty(errorMessage))
-        {
-            <div class="alert alert-danger">@errorMessage</div>
-        }
-        
-        @if (showSuccess)
-        {
-             <div class="alert alert-success">
-                 Cont creat cu succes! <a href="login">Autentifică-te aici</a>.
-             </div>
-        }
-        else
-        {
-            <EditForm Model="@registerModel" OnValidSubmit="HandleRegister">
-                <DataAnnotationsValidator />
-                <ValidationSummary />
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white text-center">
+                <h4 class="mb-0">Creează cont</h4>
+            </div>
+            <div class="card-body">
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="alert alert-danger">@errorMessage</div>
+                }
 
-                <div class="mb-3">
-                    <label for="email" class="form-label">Email</label>
-                    <InputText id="email" class="form-control" @bind-Value="registerModel.Email" />
-                </div>
-                
-                <div class="mb-3">
-                    <label for="password" class="form-label">Parola</label>
-                    <InputText id="password" type="password" class="form-control" @bind-Value="registerModel.Password" />
-                </div>
-                
-                <div class="mb-3">
-                     <label for="confirmPassword" class="form-label">Confirmă Parola</label>
-                     <InputText id="confirmPassword" type="password" class="form-control" @bind-Value="registerModel.ConfirmPassword" />
-                </div>
+                @if (showSuccess)
+                {
+                    <div class="alert alert-success">
+                        Cont creat cu succes! <a href="login">Autentifică-te aici</a>.
+                    </div>
+                }
+                else
+                {
+                    <EditForm Model="@registerModel" OnValidSubmit="HandleRegister">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger" />
 
-                <button type="submit" class="btn btn-primary">Înregistrează-te</button>
-            </EditForm>
-        }
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Prenume <span class="text-danger">*</span></label>
+                                <InputText class="form-control" @bind-Value="registerModel.FirstName" />
+                                <ValidationMessage For="@(() => registerModel.FirstName)" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Nume <span class="text-danger">*</span></label>
+                                <InputText class="form-control" @bind-Value="registerModel.LastName" />
+                                <ValidationMessage For="@(() => registerModel.LastName)" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Email <span class="text-danger">*</span></label>
+                            <InputText class="form-control" @bind-Value="registerModel.Email" />
+                            <ValidationMessage For="@(() => registerModel.Email)" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Parola <span class="text-danger">*</span></label>
+                            <InputText type="password" class="form-control" @bind-Value="registerModel.Password" />
+                            <ValidationMessage For="@(() => registerModel.Password)" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Confirmă Parola <span class="text-danger">*</span></label>
+                            <InputText type="password" class="form-control" @bind-Value="registerModel.ConfirmPassword" />
+                            <ValidationMessage For="@(() => registerModel.ConfirmPassword)" />
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100" disabled="@isLoading">
+                            @if (isLoading) { <span class="spinner-border spinner-border-sm me-2"></span> }
+                            Înregistrează-te
+                        </button>
+                    </EditForm>
+                }
+
+                <hr />
+                <p class="text-center mb-0">Ai deja cont? <a href="login">Autentifică-te</a></p>
+            </div>
+        </div>
     </div>
 </div>
 
 @code {
     private RegisterModel registerModel = new();
     private string? errorMessage;
-    private bool showSuccess = false;
+    private bool showSuccess;
+    private bool isLoading;
 
     private async Task HandleRegister()
     {
         errorMessage = null;
-        
-        try 
+        isLoading = true;
+
+        try
         {
-            // Endpoint-ul default de Identity este /register și așteaptă { email, password }
-            var response = await Http.PostAsJsonAsync("/api/auth/register", new { email = registerModel.Email, password = registerModel.Password });
+            var response = await Http.PostAsJsonAsync("/api/auth/register", new
+            {
+                email = registerModel.Email,
+                password = registerModel.Password,
+                firstName = registerModel.FirstName,
+                lastName = registerModel.LastName
+            });
 
             if (response.IsSuccessStatusCode)
             {
@@ -64,18 +101,30 @@
             }
             else
             {
-                // Simplă tratare a erorilor.
-                errorMessage = $"Eroare la înregistrare: {response.ReasonPhrase}. Verifică datele introduse.";
+                var errors = await response.Content.ReadFromJsonAsync<List<string>>();
+                errorMessage = errors != null && errors.Count > 0
+                    ? string.Join(" ", errors)
+                    : "Eroare la înregistrare. Verifică datele introduse.";
             }
         }
         catch (Exception ex)
         {
-             errorMessage = $"A apărut o eroare: {ex.Message}";
+            errorMessage = $"A apărut o eroare: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
         }
     }
-    
+
     public class RegisterModel
     {
+        [Required(ErrorMessage = "Prenumele este obligatoriu.")]
+        public string FirstName { get; set; } = "";
+
+        [Required(ErrorMessage = "Numele este obligatoriu.")]
+        public string LastName { get; set; } = "";
+
         [Required(ErrorMessage = "Email-ul este obligatoriu.")]
         [EmailAddress(ErrorMessage = "Formatul email-ului nu este valid.")]
         public string Email { get; set; } = "";
@@ -83,7 +132,7 @@
         [Required(ErrorMessage = "Parola este obligatorie.")]
         [MinLength(6, ErrorMessage = "Parola trebuie să aibă minim 6 caractere.")]
         public string Password { get; set; } = "";
-        
+
         [Compare(nameof(Password), ErrorMessage = "Parolele nu coincid.")]
         public string ConfirmPassword { get; set; } = "";
     }

@@ -1,18 +1,30 @@
 ﻿@page "/"
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Dental Scheduler - Home</PageTitle>
 
 <div class="p-5 mb-4 bg-light rounded-3">
     <div class="container-fluid py-5">
-        <h1 class="display-5 fw-bold">Dental Scheduler</h1>
-        <p class="col-md-8 fs-4">Bine ați venit la sistemul nostru modern de programări stomatologice, asistat de Inteligență Artificială.</p>
-        <button class="btn btn-primary btn-lg" type="button">Fă o programare</button>
-        <AuthorizeView>
-            <NotAuthorized>
-                <a href="login" class="btn btn-outline-secondary btn-lg ms-2">Autentificare</a>
-                <a href="register" class="btn btn-secondary btn-lg ms-2">Inregistrare</a>
-            </NotAuthorized>
-        </AuthorizeView>
+        <h1 class="display-5 fw-bold">🦷 Dental Scheduler</h1>
+        <p class="col-md-8 fs-4">Bine ați venit la sistemul nostru modern de programări stomatologice.</p>
+
+        @if (isAuthenticated)
+        {
+            @if (isDoctor)
+            {
+                <a href="doctor-dashboard" class="btn btn-primary btn-lg">📋 Dashboard Medic</a>
+            }
+            else
+            {
+                <a href="appointments" class="btn btn-primary btn-lg">📅 Programările Mele</a>
+            }
+        }
+        else
+        {
+            <a href="login" class="btn btn-primary btn-lg">Fă o programare</a>
+            <a href="login" class="btn btn-outline-secondary btn-lg ms-2">Autentificare</a>
+            <a href="register" class="btn btn-secondary btn-lg ms-2">Înregistrare</a>
+        }
     </div>
 </div>
 
@@ -20,15 +32,28 @@
     <div class="col-md-6">
         <div class="h-100 p-5 text-white bg-dark rounded-3">
             <h2>Pentru Pacienți</h2>
-            <p>Găsește rapid un interval liber și lasă AI-ul să îți propună cea mai bună oră pentru tine, evitând suprapunerile.</p>
-            <button class="btn btn-outline-light" type="button">Vezi servicii</button>
+            <p>Găsește rapid un interval liber, alege medicul preferat și trimite cererea de programare în câteva secunde.</p>
+            <a href="register" class="btn btn-outline-light">Creează cont</a>
         </div>
     </div>
     <div class="col-md-6">
         <div class="h-100 p-5 bg-light border rounded-3">
             <h2>Pentru Medici</h2>
-            <p>Gestionează programările, vizualizează orarul și optimizează fluxul de pacienți cu ajutorul dashboard-ului nostru.</p>
-            <button class="btn btn-outline-dark" type="button">Accesează Dashboard</button>
+            <p>Gestionează programările, acceptă sau respinge cererile și vizualizează orarul tău într-un dashboard dedicat.</p>
+            <a href="login" class="btn btn-outline-dark">Accesează Dashboard</a>
         </div>
     </div>
 </div>
+
+@code {
+    private bool isAuthenticated;
+    private bool isDoctor;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        isAuthenticated = user.Identity?.IsAuthenticated ?? false;
+        isDoctor = user.IsInRole("Doctor");
+    }
+}
