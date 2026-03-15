@@ -11,36 +11,35 @@
 
 <div class="row justify-content-center mt-5">
     <div class="col-md-4">
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white text-center">
-                <h4 class="mb-0">Autentificare</h4>
+        <div class="card shadow-lg border-0 animate-fade-in">
+            <div class="card-header text-center py-4">
+                <h4 class="mb-0 fw-bold">👋 Bine ai revenit!</h4>
+                <p class="mb-0 small opacity-75 mt-1">Introdu datele pentru a te autentifica</p>
             </div>
-            <div class="card-body">
-                @if (!string.IsNullOrEmpty(errorMessage))
-                {
-                    <div class="alert alert-danger">@errorMessage</div>
-                }
+            <div class="card-body p-4">
+                <AlertMessage Message="@errorMessage" Type="AlertMessage.AlertType.Danger" />
 
                 <EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
                     <DataAnnotationsValidator />
-                    <ValidationSummary />
+                    
+                    <FormField Label="Email" ValidationFor="@(() => loginModel.Email)">
+                        <InputText class="form-control" @bind-Value="loginModel.Email" placeholder="name@example.com" />
+                    </FormField>
 
-                    <div class="mb-3">
-                        <label class="form-label">Email</label>
-                        <InputText class="form-control" @bind-Value="loginModel.Email" />
+                    <FormField Label="Parola" ValidationFor="@(() => loginModel.Password)">
+                        <InputText type="password" class="form-control" @bind-Value="loginModel.Password" placeholder="••••••••" />
+                    </FormField>
+                    
+                    <div class="mt-4 mb-3">
+                        <SubmitButton IsLoading="@isLoading" LoadingText="Se autentifică...">
+                            Autentifică-te
+                        </SubmitButton>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Parola</label>
-                        <InputText type="password" class="form-control" @bind-Value="loginModel.Password" />
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100" disabled="@isLoading">
-                        @if (isLoading) { <span class="spinner-border spinner-border-sm me-2"></span> }
-                        Autentifică-te
-                    </button>
                 </EditForm>
 
-                <hr />
-                <p class="text-center mb-0">Nu ai cont? <a href="register">Înregistrează-te</a></p>
+                <div class="text-center mt-4">
+                    <p class="text-muted mb-0">Nu ai cont? <a href="register" class="fw-bold text-decoration-none">Creează unul acum</a></p>
+                </div>
             </div>
         </div>
     </div>
@@ -77,6 +76,10 @@
                     {
                         await LocalStorage.SetItemAsync("userId", me.Id);
                         await LocalStorage.SetItemAsync("userRole", me.Role);
+                        if (!string.IsNullOrEmpty(me.ProfilePictureUrl))
+                        {
+                            await LocalStorage.SetItemAsync("profilePictureUrl", me.ProfilePictureUrl);
+                        }
 
                         // Salvam si claims pentru AuthorizeView
                         var claims = new List<StoredClaim>
@@ -136,5 +139,6 @@
         public string Id { get; set; } = "";
         public string Role { get; set; } = "";
         public string Email { get; set; } = "";
+        public string? ProfilePictureUrl { get; set; }
     }
 }

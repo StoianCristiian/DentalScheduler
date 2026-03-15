@@ -1,0 +1,20 @@
+﻿<button type="@Type" class="@($"btn btn-primary py-2 rounded-3 shadow-sm fw-bold btn-hover-effect {Class}")" disabled="@IsLoading" @attributes="AdditionalAttributes">
+    @if (IsLoading)
+    {
+        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+        @LoadingText
+    }
+    else
+    {
+        @ChildContent
+    }
+</button>
+
+@code {
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public string LoadingText { get; set; } = "Se procesează...";
+    [Parameter] public string Class { get; set; } = "w-100";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string Type { get; set; } = "submit";
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
+}

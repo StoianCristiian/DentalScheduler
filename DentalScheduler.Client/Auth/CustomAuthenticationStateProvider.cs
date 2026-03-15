@@ -89,6 +89,11 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
         NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(anonymousUser)));
     }
 
+    public void NotifyUserUpdated()
+    {
+        NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+    }
+
     private class UserInfo
     {
         public string Email { get; set; } = "";

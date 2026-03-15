@@ -8,174 +8,230 @@
 
 <PageTitle>Dashboard Medic</PageTitle>
 
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0">🦷 Dashboard Medic</h2>
-        <button class="btn btn-outline-secondary" @onclick="LoadAppointments">
-            <i class="bi bi-arrow-clockwise"></i> Reîncarcă
+<div class="container mt-4 animate-fade-in">
+    @* Header Section *@
+    <div class="d-flex justify-content-between align-items-end mb-5">
+        <div>
+            <h6 class="text-uppercase text-primary small fw-bold ls-2 mb-2">Doctor Dashboard</h6>
+            <h1 class="mb-0 fw-bold display-6">Salut! 👋</h1>
+            <p class="text-muted mb-0 mt-2">Iată situația programărilor pentru <span class="text-dark fw-bold">@DateTime.Now.ToString("dd MMMM yyyy")</span></p>
+        </div>
+        <button class="btn btn-white border shadow-sm btn-hover-effect text-primary fw-bold px-4 py-2" @onclick="LoadAppointments">
+            <i class="bi bi-arrow-clockwise me-2"></i> Actualizează
         </button>
     </div>
 
-    @if (!string.IsNullOrEmpty(successMessage))
-    {
-        <div class="alert alert-success alert-dismissible">
-            @successMessage
-            <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
-        </div>
-    }
-    @if (!string.IsNullOrEmpty(errorMessage))
-    {
-        <div class="alert alert-danger alert-dismissible">
-            @errorMessage
-            <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
-        </div>
-    }
+    <AlertMessage Message="@successMessage" Type="AlertMessage.AlertType.Success" />
+    <AlertMessage Message="@errorMessage" Type="AlertMessage.AlertType.Danger" />
 
     @* Stats Cards *@
-    <div class="row mb-4">
+    <div class="row mb-5 g-4">
+        @* Card - În Așteptare *@
         <div class="col-md-3">
-            <div class="card text-bg-warning shadow-sm">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="fs-2 fw-bold">@appointments.Count(a => a.Status == 0)</div>
-                        <div>În aşteptare</div>
+            <div class="card border-0 shadow-sm h-100 overflow-hidden card-hover-effect bg-white">
+                <div class="card-body p-4 position-relative">
+                    <div class="d-flex align-items-center mb-4">
+                         <div class="rounded-3 bg-warning bg-opacity-10 text-warning p-3 me-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                             <i class="bi bi-hourglass-split fs-5"></i>
+                         </div>
+                         <h6 class="mb-0 fw-bold text-muted text-uppercase small ls-1">În Așteptare</h6>
                     </div>
-                    <i class="bi bi-hourglass-split fs-1 opacity-50"></i>
+                    <div class="d-flex align-items-baseline">
+                        <h2 class="mb-0 fw-bold display-5 text-dark">@appointments.Count(a => a.Status == 0)</h2>
+                        <span class="ms-2 text-muted small">cereri</span>
+                    </div>
+                    @* Decorative Background Icon *@
+                    <i class="bi bi-hourglass-split position-absolute text-warning opacity-10" style="font-size: 8rem; right: -2rem; bottom: -2rem; transform: rotate(-15deg); pointer-events: none;"></i>
                 </div>
             </div>
         </div>
+
+        @* Card - Acceptate *@
         <div class="col-md-3">
-            <div class="card text-bg-success shadow-sm">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="fs-2 fw-bold">@appointments.Count(a => a.Status == 1)</div>
-                        <div>Acceptate</div>
+            <div class="card border-0 shadow-sm h-100 overflow-hidden card-hover-effect bg-white">
+                <div class="card-body p-4 position-relative">
+                    <div class="d-flex align-items-center mb-4">
+                         <div class="rounded-3 bg-info bg-opacity-10 text-info p-3 me-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                             <i class="bi bi-calendar-check fs-5"></i>
+                         </div>
+                         <h6 class="mb-0 fw-bold text-muted text-uppercase small ls-1">Programate</h6>
                     </div>
-                    <i class="bi bi-check-circle fs-1 opacity-50"></i>
+                    <div class="d-flex align-items-baseline">
+                        <h2 class="mb-0 fw-bold display-5 text-dark">@appointments.Count(a => a.Status == 1 || a.Status == 4)</h2>
+                        <span class="ms-2 text-muted small">pacienți</span>
+                    </div>
+                     <i class="bi bi-calendar-check position-absolute text-info opacity-10" style="font-size: 8rem; right: -2rem; bottom: -2rem; transform: rotate(-15deg); pointer-events: none;"></i>
                 </div>
             </div>
         </div>
+
+        @* Card - Completate *@
         <div class="col-md-3">
-            <div class="card text-bg-danger shadow-sm">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="fs-2 fw-bold">@appointments.Count(a => a.Status == 2)</div>
-                        <div>Respinse</div>
+            <div class="card border-0 shadow-sm h-100 overflow-hidden card-hover-effect bg-white">
+                <div class="card-body p-4 position-relative">
+                    <div class="d-flex align-items-center mb-4">
+                         <div class="rounded-3 bg-success bg-opacity-10 text-success p-3 me-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                             <i class="bi bi-cash-coin fs-5"></i>
+                         </div>
+                         <h6 class="mb-0 fw-bold text-muted text-uppercase small ls-1">Încasate</h6>
                     </div>
-                    <i class="bi bi-x-circle fs-1 opacity-50"></i>
+                    <div class="d-flex align-items-baseline">
+                        <h2 class="mb-0 fw-bold display-5 text-dark">@appointments.Count(a => a.Status == 5)</h2>
+                        <span class="ms-2 text-muted small">total</span>
+                    </div>
+                    <i class="bi bi-cash-coin position-absolute text-success opacity-10" style="font-size: 8rem; right: -2rem; bottom: -2rem; transform: rotate(-15deg); pointer-events: none;"></i>
                 </div>
             </div>
         </div>
+
+        @* Card - Total *@
         <div class="col-md-3">
-            <div class="card text-bg-primary shadow-sm">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="fs-2 fw-bold">@appointments.Count</div>
-                        <div>Total</div>
+            <div class="card border-0 shadow-sm h-100 overflow-hidden card-hover-effect bg-primary text-white bg-gradient-primary">
+                <div class="card-body p-4 position-relative">
+                    <div class="d-flex align-items-center mb-4">
+                         <div class="rounded-3 bg-white bg-opacity-25 text-white p-3 me-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                             <i class="bi bi-people fs-5"></i>
+                         </div>
+                         <h6 class="mb-0 fw-bold text-white text-opacity-75 text-uppercase small ls-1">Total</h6>
                     </div>
-                    <i class="bi bi-calendar3 fs-1 opacity-50"></i>
+                    <div class="d-flex align-items-baseline">
+                        <h2 class="mb-0 fw-bold display-5">@appointments.Count</h2>
+                        <span class="ms-2 text-white text-opacity-75 small">programări</span>
+                    </div>
+                    <i class="bi bi-grid-3x3-gap position-absolute text-white opacity-10" style="font-size: 8rem; right: -2rem; bottom: -2rem; transform: rotate(-15deg); pointer-events: none;"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    @* Filter Tabs *@
-    <ul class="nav nav-tabs mb-3">
-        <li class="nav-item">
-            <button class="nav-link @(activeFilter == -1 ? "active" : "")" @onclick="() => activeFilter = -1">
-                Toate (@appointments.Count)
+    @* Filter Tabs - Modern Pills *@
+    <div class="d-flex justify-content-center mb-4">
+        <div class="bg-white p-2 rounded-pill shadow-sm d-inline-flex gap-2 border">
+            <button class="btn btn-sm rounded-pill px-4 fw-bold @(activeFilter == -1 ? "btn-dark" : "btn-light text-muted bg-transparent border-0")" 
+                    @onclick="() => activeFilter = -1">
+                Toate
             </button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link @(activeFilter == 0 ? "active" : "")" @onclick="() => activeFilter = 0">
-                În aşteptare (@appointments.Count(a => a.Status == 0))
+            <button class="btn btn-sm rounded-pill px-4 fw-bold @(activeFilter == 0 ? "btn-warning text-dark" : "btn-light text-muted bg-transparent border-0")" 
+                    @onclick="() => activeFilter = 0">
+                În aşteptare
+                @if(appointments.Count(a => a.Status == 0) > 0) { <span class="badge bg-white text-dark ms-2 rounded-circle">@appointments.Count(a => a.Status == 0)</span> }
             </button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link @(activeFilter == 1 ? "active" : "")" @onclick="() => activeFilter = 1">
-                Acceptate (@appointments.Count(a => a.Status == 1))
+            <button class="btn btn-sm rounded-pill px-4 fw-bold @(activeFilter == 1 ? "btn-info text-white" : "btn-light text-muted bg-transparent border-0")" 
+                    @onclick="() => activeFilter = 1">
+                Acceptate
             </button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link @(activeFilter == 2 ? "active" : "")" @onclick="() => activeFilter = 2">
-                Respinse (@appointments.Count(a => a.Status == 2))
+             <button class="btn btn-sm rounded-pill px-4 fw-bold @(activeFilter == 4 ? "btn-primary" : "btn-light text-muted bg-transparent border-0")" 
+                    @onclick="() => activeFilter = 4">
+                Confirmate
             </button>
-        </li>
-    </ul>
+            <button class="btn btn-sm rounded-pill px-4 fw-bold @(activeFilter == 2 ? "btn-danger" : "btn-light text-muted bg-transparent border-0")" 
+                    @onclick="() => activeFilter = 2">
+                Respinse
+            </button>
+            <button class="btn btn-sm rounded-pill px-4 fw-bold @(activeFilter == 5 ? "btn-success" : "btn-light text-muted bg-transparent border-0")" 
+                    @onclick="() => activeFilter = 5">
+                Completate
+            </button>
+        </div>
+    </div>
 
-    <div class="card shadow-sm">
-        <div class="card-body">
+    @* Appointments Table *@
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden mb-5">
+        <div class="card-body p-0">
             @if (isLoading)
             {
-                <div class="text-center py-4">
-                    <div class="spinner-border text-primary"></div>
-                    <p class="mt-2">Se încarcă programările...</p>
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2 text-muted fw-semibold">Se încarcă programările...</p>
                 </div>
             }
             else if (!FilteredAppointments.Any())
             {
                 <div class="text-center py-5">
-                    <i class="bi bi-calendar-check fs-1 text-muted"></i>
-                    <p class="mt-3 text-muted">Nu există programări în această categorie.</p>
+                    <div class="mb-3 text-muted opacity-25 display-1">
+                        <i class="bi bi-inbox"></i>
+                    </div>
+                    <p class="text-muted fs-5">Nu există programări în această categorie.</p>
                 </div>
             }
             else
             {
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-light">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light text-secondary small text-uppercase ls-1">
                             <tr>
-                                <th>Pacient</th>
-                                <th>Tratament</th>
-                                <th>Data</th>
-                                <th>Ora</th>
-                                <th>Note</th>
-                                <th>Status</th>
-                                <th class="text-center">Acţiuni</th>
+                                <th class="border-0 py-3 ps-4">Pacient</th>
+                                <th class="border-0 py-3">Tratament</th>
+                                <th class="border-0 py-3">Data & Ora</th>
+                                <th class="border-0 py-3">Note</th>
+                                <th class="border-0 py-3">Status</th>
+                                <th class="border-0 py-3 pe-4 text-end" style="min-width: 160px;">Acţiuni</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach (var appt in FilteredAppointments)
                             {
                                 <tr>
-                                    <td>
-                                        <span class="fw-semibold">@(appt.PatientName ?? "Pacient necunoscut")</span>
+                                    <td class="ps-4 py-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm bg-light text-primary fw-bold rounded-circle me-3 d-flex align-items-center justify-content-center border" style="width:40px; height:40px;">
+                                                @(appt.PatientName?.FirstOrDefault().ToString().ToUpper() ?? "?")
+                                            </div>
+                                            <div>
+                                                <div class="fw-semibold text-dark">@(appt.PatientName ?? "Pacient necunoscut")</div>
+                                            </div>
+                                        </div>
                                     </td>
-                                    <td>@(appt.TreatmentType ?? "—")</td>
-                                    <td>@appt.StartAt.ToShortDateString()</td>
-                                    <td>@appt.StartAt.ToShortTimeString()</td>
-                                    <td>
+                                    <td class="py-3"><span class="badge bg-light text-dark border fw-normal">@appt.TreatmentType</span></td>
+                                    <td class="py-3">
+                                        <div class="text-dark fw-medium">@appt.StartAt.ToShortDateString()</div>
+                                        <div class="text-muted small">@appt.StartAt.ToShortTimeString()</div>
+                                    </td>
+                                    <td class="py-3">
                                         @if (!string.IsNullOrEmpty(appt.Notes))
                                         {
-                                            <span class="text-muted small" title="@appt.Notes">
-                                                @(appt.Notes.Length > 30 ? appt.Notes[..30] + "..." : appt.Notes)
+                                            <span class="d-inline-block text-truncate text-muted small" style="max-width: 200px;" title="@appt.Notes">
+                                                @appt.Notes
                                             </span>
                                         }
                                         else { <span class="text-muted">—</span> }
                                     </td>
-                                    <td>
-                                        <span class="badge @GetStatusClass(appt.Status)">@GetStatusLabel(appt.Status)</span>
+                                    <td class="py-3">
+                                        <span class="badge rounded-pill px-3 py-2 @GetStatusClass(appt.Status)">@GetStatusLabel(appt.Status)</span>
                                     </td>
-                                    <td class="text-center">
-                                        @if (appt.Status == 0)
+                                    <td class="py-3 pe-4 text-end">
+                                        @if (appt.Status == 0) // Pending
                                         {
-                                            <button class="btn btn-success btn-sm me-1"
-                                                    @onclick="() => UpdateStatus(appt.Id, 1)"
+                                            <div class="btn-group shadow-sm" role="group">
+                                                <button type="button" class="btn btn-success btn-sm"
+                                                        @onclick="() => UpdateStatus(appt.Id, 1)"
+                                                        disabled="@(processingId == appt.Id)"
+                                                        title="Acceptă">
+                                                    @if (processingId == appt.Id)
+                                                    { <span class="spinner-border spinner-border-sm"></span> }
+                                                    else { <i class="bi bi-check-lg"></i> }
+                                                </button>
+                                                <button type="button" class="btn btn-danger btn-sm"
+                                                        @onclick="() => UpdateStatus(appt.Id, 2)"
+                                                        disabled="@(processingId == appt.Id)"
+                                                        title="Respinge">
+                                                    <i class="bi bi-x-lg"></i>
+                                                </button>
+                                            </div>
+                                        }
+                                        else if (appt.Status == 4) // Confirmed by Patient -> Doctor marks paid/completed
+                                        {
+                                            <button class="btn btn-primary btn-sm"
+                                                    @onclick="() => UpdateStatus(appt.Id, 5)"
                                                     disabled="@(processingId == appt.Id)">
                                                 @if (processingId == appt.Id)
-                                                { <span class="spinner-border spinner-border-sm"></span> }
-                                                else { <i class="bi bi-check-lg"></i> }
-                                                Acceptă
-                                            </button>
-                                            <button class="btn btn-danger btn-sm"
-                                                    @onclick="() => UpdateStatus(appt.Id, 2)"
-                                                    disabled="@(processingId == appt.Id)">
-                                                <i class="bi bi-x-lg"></i> Respinge
+                                                { <span class="spinner-border spinner-border-sm me-1"></span> }
+                                                <i class="bi bi-cash-coin me-1"></i> Încasează
                                             </button>
                                         }
                                         else
                                         {
-                                            <span class="text-muted small">Finalizat</span>
+                                            <span class="text-muted small fst-italic">Finalizat</span>
                                         }
                                     </td>
                                 </tr>
@@ -233,7 +289,15 @@
             {
                 var appt = appointments.FirstOrDefault(a => a.Id == appointmentId);
                 if (appt != null) appt.Status = status;
-                successMessage = status == 1 ? "Programarea a fost acceptată!" : "Programarea a fost respinsă.";
+                
+                if (status == 1)
+                    successMessage = "Programarea a fost acceptată!";
+                else if (status == 2)
+                    successMessage = "Programarea a fost respinsă.";
+                else if (status == 5)
+                    successMessage = "Programare finalizată și plătită!";
+                else
+                    successMessage = "Statusul programării a fost actualizat.";
             }
             else
             {
@@ -246,18 +310,24 @@
 
     private string GetStatusClass(int status) => status switch
     {
-        1 => "bg-success",
-        2 => "bg-danger",
-        3 => "bg-secondary",
-        _ => "bg-warning text-dark"
+        0 => "bg-warning text-dark bg-opacity-25 border border-warning", // Pending
+        1 => "bg-info text-dark bg-opacity-10 border border-info", // Accepted
+        2 => "bg-danger text-danger bg-opacity-10 border border-danger", // Rejected
+        3 => "bg-secondary text-white", // Cancelled
+        4 => "bg-primary text-primary bg-opacity-10 border border-primary", // Confirmed
+        5 => "bg-success text-success bg-opacity-10 border border-success", // Completed
+        _ => "bg-secondary"
     };
 
     private string GetStatusLabel(int status) => status switch
     {
-        1 => "Acceptat",
-        2 => "Respins",
-        3 => "Anulat",
-        _ => "În aşteptare"
+        0 => "⏳ În așteptare",
+        1 => "📅 Programat",
+        2 => "❌ Respins",
+        3 => "🚫 Anulat",
+        4 => "👍 Confirmat",
+        5 => "✅ Finalizat",
+        _ => "Necunoscut"
     };
 
     public class AppointmentDto
@@ -274,4 +344,3 @@
         public string? DentistName { get; set; }
     }
 }
-

@@ -38,6 +38,8 @@ var app = builder.Build();
 // Activează CORS
 app.UseCors("AllowBlazorClient");
 
+app.UseStaticFiles(); // <-- Activeaza fisiere statice pentru pozile de profil
+
 // Activeaza Authentication si Authorization
 app.UseAuthentication();
 app.UseAuthorization();

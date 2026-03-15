@@ -1,0 +1,287 @@
+﻿@page "/profile"
+@using System.ComponentModel.DataAnnotations
+@using System.Net.Http.Headers
+@using Blazored.LocalStorage
+@using Microsoft.AspNetCore.Authorization
+@using DentalScheduler.Client.Auth
+@attribute [Authorize]
+@inject HttpClient Http
+@inject ILocalStorageService LocalStorage
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+
+<PageTitle>Profilul Meu</PageTitle>
+
+<div class="container py-5 animate-fade-in">
+    <div class="row justify-content-center">
+        <div class="col-xl-9 col-lg-10">
+            
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden mb-5">
+                <!-- Cover Photo Area -->
+                <div class="bg-primary position-relative" style="height: 160px; background: linear-gradient(135deg, #0d6efd 0%, #004385 100%);">
+                    <div class="position-absolute top-0 start-0 w-100 h-100 opacity-25" 
+                         style="background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.1) 10px, rgba(255,255,255,0.1) 20px);"></div>
+                </div>
+
+                <div class="card-body px-4 px-md-5 pb-5">
+                    <div class="row">
+                        <!-- Left Side: Profile Card -->
+                        <div class="col-md-4 mb-4 mb-md-0 position-relative">
+                            <div class="text-center mt-n5">
+                                <div class="position-relative d-inline-block">
+                                    <!-- Avatar -->
+                                    <div class="rounded-circle border border-5 border-white shadow bg-white overflow-hidden d-flex align-items-center justify-content-center" 
+                                         style="width: 150px; height: 150px;">
+                                        @if (!string.IsNullOrEmpty(userProfile.ProfilePictureUrl))
+                                        {
+                                            <img src="@GetFullImageUrl(userProfile.ProfilePictureUrl)" alt="Profile" class="w-100 h-100 object-fit-cover" 
+                                                 onerror="this.onerror=null;this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2NjYyIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEwIi8+PHBhdGggZD0iTTUgMjFjMi00IDQtNiA3LTZzNSAyIDcgNiIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iNyIgcj0iNCIvPjwvc3ZnPg==';" />
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-person-fill text-muted" style="font-size: 5rem;"></i>
+                                        }
+                                    </div>
+                                    <!-- Camera Button -->
+                                    <label class="btn btn-primary rounded-circle position-absolute bottom-0 end-0 border border-3 border-white shadow-sm d-flex align-items-center justify-content-center btn-hover-scale" 
+                                           style="width: 42px; height: 42px; transform: translate(-5px, -5px);" 
+                                           title="Încarcă fotografie">
+                                        <i class="bi bi-camera-fill small"></i>
+                                        <InputFile OnChange="UploadProfilePicture" hidden accept=".jpg,.jpeg,.png" />
+                                    </label>
+                                </div>
+                                
+                                <h4 class="fw-bold mt-3 mb-1">@userProfile.FirstName @userProfile.LastName</h4>
+                                <div class="badge bg-light text-primary border border-primary-subtle rounded-pill px-3 py-1 mb-2">
+                                    @userProfile.Role
+                                </div>
+                                <div class="text-muted small">
+                                    <i class="bi bi-geo-alt me-1"></i>
+                                    @(string.IsNullOrWhiteSpace(userProfile.Address) ? "Adresă specificată" : userProfile.Address.Split(',')[0])
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Side: Edit Form -->
+                        <div class="col-md-8 ps-md-5 pt-3">
+                            <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+                                <h5 class="mb-0 fw-bold text-dark">
+                                    <i class="bi bi-person-gear me-2 text-primary"></i>Setări Cont
+                                </h5>
+                            </div>
+
+                            <AlertMessage Message="@successMessage" Type="AlertMessage.AlertType.Success" />
+                            <AlertMessage Message="@errorMessage" Type="AlertMessage.AlertType.Danger" />
+
+                            @if (isLoading)
+                            {
+                                <div class="text-center py-4">
+                                    <div class="spinner-border text-primary spinner-border-sm" role="status"></div>
+                                    <span class="ms-2 text-muted fw-medium">Se încarcă datele...</span>
+                                </div>
+                            }
+                            else
+                            {
+                                <EditForm Model="@userProfile" OnValidSubmit="SaveProfile">
+                                    <DataAnnotationsValidator />
+                                    
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <div class="form-floating">
+                                                <InputText id="firstName" class="form-control" @bind-Value="userProfile.FirstName" placeholder="Prenume" />
+                                                <label for="firstName" class="text-muted">Prenume</label>
+                                            </div>
+                                            <ValidationMessage For="@(() => userProfile.FirstName)" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-floating">
+                                                <InputText id="lastName" class="form-control" @bind-Value="userProfile.LastName" placeholder="Nume" />
+                                                <label for="lastName" class="text-muted">Nume</label>
+                                            </div>
+                                            <ValidationMessage For="@(() => userProfile.LastName)" />
+                                        </div>
+
+                                        <div class="col-12">
+                                            <div class="form-floating">
+                                                <input type="email" id="email" class="form-control bg-light" value="@userProfile.Email" disabled readonly placeholder="name@example.com" />
+                                                <label for="email" class="text-muted">Adresă de Email <i class="bi bi-lock-fill small ms-1"></i></label>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12">
+                                            <div class="form-floating">
+                                                <InputText id="phone" class="form-control" @bind-Value="userProfile.PhoneNumber" placeholder="07xx" />
+                                                <label for="phone" class="text-muted">Număr Telefon</label>
+                                            </div>
+                                            <ValidationMessage For="@(() => userProfile.PhoneNumber)" />
+                                        </div>
+
+                                        <div class="col-12">
+                                            <div class="form-floating">
+                                                <InputTextArea id="address" class="form-control" @bind-Value="userProfile.Address" placeholder="Adresa" style="height: 100px" />
+                                                <label for="address" class="text-muted">Adresă completă</label>
+                                            </div>
+                                            <ValidationMessage For="@(() => userProfile.Address)" />
+                                        </div>
+
+                                        <div class="col-12 mt-4 text-end">
+                                            <SubmitButton IsLoading="@isSaving" LoadingText="Se salvează..." Class="px-5 rounded-pill shadow-sm">
+                                                Salvează Modificările
+                                            </SubmitButton>
+                                        </div>
+                                    </div>
+                                </EditForm>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private UserProfileModel userProfile = new();
+    private bool isLoading = true;
+    private bool isSaving = false;
+    private string? successMessage;
+    private string? errorMessage;
+    // URL-ul de bază trebuie să fie cel al API-ului (port 5062)
+    private const string ApiBaseUrl = "http://localhost:5062"; 
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProfile();
+    }
+
+    private async Task LoadProfile()
+    {
+        isLoading = true;
+        try
+        {
+            userProfile = await Http.GetFromJsonAsync<UserProfileModel>("api/auth/me") ?? new();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Eroare la încărcarea profilului.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task SaveProfile()
+    {
+        isSaving = true;
+        successMessage = null;
+        errorMessage = null;
+
+        try
+        {
+            var response = await Http.PutAsJsonAsync("api/auth/profile", new
+            {
+                FirstName = userProfile.FirstName,
+                LastName = userProfile.LastName,
+                PhoneNumber = userProfile.PhoneNumber,
+                Address = userProfile.Address
+            });
+
+            if (response.IsSuccessStatusCode)
+            {
+                successMessage = "Profilul a fost actualizat cu succes!";
+            }
+            else
+            {
+                errorMessage = "Nu s-a putut actualiza profilul.";
+            }
+        }
+        catch(Exception ex)
+        {
+            errorMessage = "Eroare: " + ex.Message;
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task UploadProfilePicture(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file == null) return;
+
+        // Limita de 5MB
+        if (file.Size > 5120000)
+        {
+            errorMessage = "Imaginea trebuie să fie mai mică de 5MB.";
+            return;
+        }
+
+        try 
+        {
+            var content = new MultipartFormDataContent();
+            var fileContent = new StreamContent(file.OpenReadStream(5120000));
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
+            content.Add(fileContent, "file", file.Name);
+
+            var response = await Http.PostAsync("api/auth/profile-picture", content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<UploadResponse>();
+                if (result != null)
+                {
+                    // Salvam URL-ul in LocalStorage pentru NavMenu si alte componente
+                    await LocalStorage.SetItemAsync("profilePictureUrl", result.Url);
+
+                    // Force image refresh by appending timestamp
+                    userProfile.ProfilePictureUrl = result.Url + "?t=" + DateTime.Now.Ticks;
+                    successMessage = "Fotografia de profil a fost actualizată!";
+                    
+                    // Notificam NavMenu ca s-a schimbat ceva (pentru a reciti poza din LocalStorage)
+                    if (AuthStateProvider is CustomAuthenticationStateProvider customAuth)
+                    {
+                        customAuth.NotifyUserUpdated();
+                    }
+
+                    StateHasChanged();
+                }
+            }
+            else
+            {
+                errorMessage = "Eroare la încărcarea imaginii.";
+            }
+        }
+        catch(Exception ex)
+        {
+            errorMessage = "Eroare: " + ex.Message;
+        }
+    }
+
+    private string GetFullImageUrl(string? relativeUrl)
+    {
+        if (string.IsNullOrEmpty(relativeUrl)) return "";
+        if (relativeUrl.StartsWith("http")) return relativeUrl;
+        return $"{ApiBaseUrl}{relativeUrl}";
+    }
+
+    public class UserProfileModel
+    {
+        public string Id { get; set; } = "";
+        
+        [Required(ErrorMessage = "Prenumele este obligatoriu.")]
+        public string FirstName { get; set; } = "";
+        
+        [Required(ErrorMessage = "Numele este obligatoriu.")]
+        public string LastName { get; set; } = "";
+        
+        public string Email { get; set; } = "";
+        public string Role { get; set; } = "";
+        public string PhoneNumber { get; set; } = "";
+        public string Address { get; set; } = "";
+        public string ProfilePictureUrl { get; set; } = "";
+    }
+
+    public class UploadResponse { public string Url { get; set; } = ""; }
+}
