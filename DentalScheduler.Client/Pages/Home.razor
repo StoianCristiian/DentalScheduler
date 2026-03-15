@@ -3,44 +3,45 @@
 
 <PageTitle>Dental Scheduler - Home</PageTitle>
 
-<div class="p-5 mb-4 bg-light rounded-3">
-    <div class="container-fluid py-5">
-        <h1 class="display-5 fw-bold">🦷 Dental Scheduler</h1>
-        <p class="col-md-8 fs-4">Bine ați venit la sistemul nostru modern de programări stomatologice.</p>
-
-        @if (isAuthenticated)
-        {
-            @if (isDoctor)
-            {
-                <a href="doctor-dashboard" class="btn btn-primary btn-lg">📋 Dashboard Medic</a>
-            }
-            else
-            {
-                <a href="appointments" class="btn btn-primary btn-lg">📅 Programările Mele</a>
-            }
-        }
-        else
-        {
-            <a href="login" class="btn btn-primary btn-lg">Fă o programare</a>
-            <a href="login" class="btn btn-outline-secondary btn-lg ms-2">Autentificare</a>
-            <a href="register" class="btn btn-secondary btn-lg ms-2">Înregistrare</a>
-        }
-    </div>
-</div>
-
-<div class="row align-items-md-stretch">
-    <div class="col-md-6">
-        <div class="h-100 p-5 text-white bg-dark rounded-3">
-            <h2>Pentru Pacienți</h2>
-            <p>Găsește rapid un interval liber, alege medicul preferat și trimite cererea de programare în câteva secunde.</p>
-            <a href="register" class="btn btn-outline-light">Creează cont</a>
+<div class="container py-5 animate-fade-in">
+    <div class="row align-items-center mb-5">
+        <div class="col-lg-6">
+            <h1 class="display-4 fw-bold mb-3 ls-1">
+                Zâmbetul tău, <br />
+                <span class="text-gradient">Prioritatea noastră.</span>
+            </h1>
+            <p class="lead text-muted mb-4">
+                Programări stomatologice rapide și ușoare. Gestionează-ți vizitele la dentist într-un mod modern și eficient.
+            </p>
+            
+            <div class="d-flex gap-3">
+                @if (isAuthenticated)
+                {
+                    @if (isDoctor)
+                    {
+                        <a href="doctor-dashboard" class="btn btn-primary btn-lg shadow-sm px-4 btn-hover-effect">
+                            📋 Dashboard Medic
+                        </a>
+                    }
+                    else
+                    {
+                        <a href="appointments" class="btn btn-primary btn-lg shadow-sm px-4 btn-hover-effect">
+                            📅 Programările Mele
+                        </a>
+                    }
+                }
+                else
+                {
+                    <a href="login" class="btn btn-primary btn-lg shadow-sm px-4 btn-hover-effect">Programează-te Acum</a>
+                    <a href="register" class="btn btn-outline-secondary btn-lg px-4 btn-hover-effect">Cont Nou</a>
+                }
+            </div>
         </div>
-    </div>
-    <div class="col-md-6">
-        <div class="h-100 p-5 bg-light border rounded-3">
-            <h2>Pentru Medici</h2>
-            <p>Gestionează programările, acceptă sau respinge cererile și vizualizează orarul tău într-un dashboard dedicat.</p>
-            <a href="login" class="btn btn-outline-dark">Accesează Dashboard</a>
+        <div class="col-lg-6 d-none d-lg-block text-center">
+            <!-- Placeholder for hero image if you add one later -->
+            <div class="p-5 rounded-circle bg-light d-inline-block shadow-sm" style="width: 400px; height: 400px; display: flex !important; align-items: center; justify-content: center; font-size: 5rem;">
+                🦷
+            </div>
         </div>
     </div>
 </div>

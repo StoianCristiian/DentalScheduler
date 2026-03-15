@@ -13,12 +13,13 @@ public record AppointmentDto(
     string? TreatmentType,
     AppointmentStatus Status,
     string? PatientName,
-    string? DentistName
+    string? DentistName,
+    string? DentistProfilePictureUrl
 );
 
 public static class AppointmentExtensions
 {
-    public static AppointmentDto ToDto(this Appointment appointment, string? patientName = null, string? dentistName = null)
+    public static AppointmentDto ToDto(this Appointment appointment, string? patientName = null, string? dentistName = null, string? dentistProfilePictureUrl = null)
         => new(
             appointment.Id,
             appointment.PatientId,
@@ -29,6 +30,7 @@ public static class AppointmentExtensions
             appointment.TreatmentType,
             appointment.Status,
             patientName,
-            dentistName
+            dentistName,
+            dentistProfilePictureUrl
         );
 }

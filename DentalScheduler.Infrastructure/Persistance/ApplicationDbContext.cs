@@ -21,7 +21,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
             Id = u.Id,
             FirstName = u.FirstName,
             LastName = u.LastName,
-            Email = u.Email ?? string.Empty
+            Email = u.Email ?? string.Empty,
+            ProfilePictureUrl = u.ProfilePictureUrl
         });
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

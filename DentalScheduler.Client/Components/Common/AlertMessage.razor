@@ -1,0 +1,33 @@
+﻿@if (!string.IsNullOrEmpty(Message))
+{
+    <div class="alert alert-@(Type.ToString().ToLower()) shadow-sm border-0 rounded-3 d-flex align-items-center animate-fade-in" role="alert">
+        <div class="me-3 fs-4">
+            @if (Type == AlertType.Success)
+            {
+                <span>✅</span>
+            }
+            else if (Type == AlertType.Danger)
+            {
+                <span>⚠️</span>
+            }
+            else
+            {
+                <span>ℹ️</span>
+            }
+        </div>
+        <div>@Message</div>
+    </div>
+}
+
+@code {
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public AlertType Type { get; set; } = AlertType.Info;
+
+    public enum AlertType
+    {
+        Success,
+        Danger,
+        Info,
+        Warning
+    }
+}

@@ -6,17 +6,19 @@
 @using Blazored.LocalStorage
 @inject ILocalStorageService LocalStorage
 
-<nav class="navbar navbar-expand-md navbar-dark bg-dark mb-4">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">🦷 DentalScheduler</a>
-        <button class="navbar-toggler" @onclick="ToggleNavMenu">
+<nav class="navbar navbar-expand-md navbar-dark mb-4 sticky-top">
+    <div class="container">
+        <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="">
+            <span style="font-size: 1.5rem;">🦷</span> DentalScheduler
+        </a>
+        <button class="navbar-toggler shadow-none border-0" @onclick="ToggleNavMenu">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="@NavMenuCssClass navbar-collapse" @onclick="ToggleNavMenu">
             <ul class="navbar-nav me-auto mb-2 mb-md-0">
                 <li class="nav-item">
-                    <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                        🏠 Home
+                    <NavLink class="nav-link px-3" href="" Match="NavLinkMatch.All">
+                        🏠 Acasă
                     </NavLink>
                 </li>
                 @if (isAuthenticated)
@@ -43,20 +45,36 @@
             <ul class="navbar-nav ms-auto mb-2 mb-md-0">
                 @if (isAuthenticated)
                 {
-                    <li class="nav-item">
-                        <span class="navbar-text me-3">Salut, @displayName!</span>
+                    <li class="nav-item d-flex align-items-center text-white mx-3 d-none d-md-block">
+                        <span class="opacity-50">|</span>
+                    </li>
+                    <li class="nav-item d-flex align-items-center">
+                        <NavLink class="nav-link text-white me-3 d-flex align-items-center" href="profile">
+                            @if (!string.IsNullOrEmpty(profilePictureUrl))
+                            {
+                                <img src="@GetFullImageUrl(profilePictureUrl)" 
+                                     class="rounded-circle me-2 border border-white" 
+                                     style="width: 32px; height: 32px; object-fit: cover;" 
+                                     alt="Profile" />
+                            }
+                            else
+                            {
+                                <i class="bi bi-person-circle me-2"></i>
+                            }
+                            <span class="fw-light">Salut, <strong>@displayName</strong>!</span>
+                        </NavLink>
                     </li>
                     <li class="nav-item">
-                        <button class="btn btn-outline-light btn-sm" @onclick="Logout">Logout</button>
+                        <button class="btn btn-outline-light btn-sm px-3 rounded-pill" @onclick="Logout">Logout</button>
                     </li>
                 }
                 else
                 {
-                    <li class="nav-item">
+                    <li class="nav-item ms-md-2">
                         <NavLink class="nav-link" href="login">Autentificare</NavLink>
                     </li>
-                    <li class="nav-item">
-                        <NavLink class="nav-link" href="register">Înregistrare</NavLink>
+                    <li class="nav-item ms-md-1">
+                        <NavLink class="btn btn-light text-primary fw-bold btn-sm px-3 rounded-pill ms-2" href="register">Înregistrare</NavLink>
                     </li>
                 }
             </ul>
@@ -70,6 +88,8 @@
     private bool isAuthenticated;
     private bool isDoctor;
     private string displayName = "Utilizator";
+    private string? profilePictureUrl;
+    private const string ApiBaseUrl = "http://localhost:5062";
 
     protected override async Task OnInitializedAsync()
     {
@@ -90,6 +110,12 @@
 
         isAuthenticated = user.Identity?.IsAuthenticated ?? false;
         isDoctor = user.IsInRole("Doctor");
+
+        if (isAuthenticated)
+        {
+            // Try to get profile picture from local storage
+            profilePictureUrl = await LocalStorage.GetItemAsync<string>("profilePictureUrl");
+        }
 
         var name = user.Identity?.Name
             ?? user.FindFirst(ClaimTypes.Email)?.Value
@@ -113,7 +139,15 @@
         await LocalStorage.RemoveItemAsync("authToken");
         await LocalStorage.RemoveItemAsync("userClaims");
         await LocalStorage.RemoveItemAsync("userId");
+        await LocalStorage.RemoveItemAsync("profilePictureUrl");
         ((CustomAuthenticationStateProvider)AuthStateProvider).MarkUserAsLoggedOut();
         Navigation.NavigateTo("/");
+    }
+
+    private string GetFullImageUrl(string? relativeUrl)
+    {
+        if (string.IsNullOrEmpty(relativeUrl)) return "";
+        if (relativeUrl.StartsWith("http")) return relativeUrl;
+        return $"{ApiBaseUrl}{relativeUrl}";
     }
 }

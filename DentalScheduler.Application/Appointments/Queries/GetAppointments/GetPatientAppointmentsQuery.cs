@@ -25,14 +25,16 @@ public class GetPatientAppointmentsQueryHandler : IRequestHandler<GetPatientAppo
 
         var dentists = await _context.Users
             .Where(u => dentistIds.Contains(u.Id))
-            .Select(u => new { u.Id, u.FirstName, u.LastName })
+            .Select(u => new { u.Id, u.FirstName, u.LastName, u.ProfilePictureUrl })
             .ToListAsync(cancellationToken);
 
-        var dentistMap = dentists.ToDictionary(u => u.Id, u => $"{u.FirstName} {u.LastName}".Trim());
+        var dentistMap = dentists.ToDictionary(u => u.Id, u => new { Name = $"{u.FirstName} {u.LastName}".Trim(), u.ProfilePictureUrl });
 
         return appointments
-            .Select(a => a.ToDto(null, dentistMap.GetValueOrDefault(a.DentistId.ToString())))
+            .Select(a => {
+                var dentist = dentistMap.GetValueOrDefault(a.DentistId.ToString());
+                return a.ToDto(null, dentist?.Name, dentist?.ProfilePictureUrl);
+            })
             .ToList();
     }
 }
-
