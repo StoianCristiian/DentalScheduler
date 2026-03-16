@@ -17,7 +17,9 @@ public class GetAppointmentsQueryHandler : IRequestHandler<GetAppointmentsQuery,
 
     public async Task<List<AppointmentDto>> Handle(GetAppointmentsQuery request, CancellationToken cancellationToken)
     {
-        var appointments = await _context.Appointments.ToListAsync(cancellationToken);
+        var appointments = await _context.Appointments
+            .OrderByDescending(a => a.StartAt)
+            .ToListAsync(cancellationToken);
 
         var userIds = appointments
             .Select(a => a.PatientId.ToString())
@@ -39,4 +41,3 @@ public class GetAppointmentsQueryHandler : IRequestHandler<GetAppointmentsQuery,
             .ToList();
     }
 }
-

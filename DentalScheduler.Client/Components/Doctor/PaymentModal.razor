@@ -1,0 +1,56 @@
+﻿@using DentalScheduler.Client.Models
+
+@if (PaymentAppt != null)
+{
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header border-bottom-0 p-4">
+                    <h5 class="modal-title fw-bold text-success">
+                        <i class="bi bi-cash-stack me-2"></i>Încasare Serviciu
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="OnClose"></button>
+                </div>
+                <div class="modal-body p-4 pt-2">
+                    <div class="mb-3">
+                         <label class="form-label fw-semibold text-secondary small text-uppercase ls-1">Cost Total (RON)</label>
+                         <div class="input-group">
+                             <span class="input-group-text bg-white border-end-0 text-muted">RON</span>
+                             <input type="number" class="form-control border-start-0 ps-0 fs-4 fw-bold text-dark" 
+                                    value="@PaymentAmount" 
+                                    @onchange="OnAmountChanged"
+                                    min="0" step="10" />
+                         </div>
+                         <div class="form-text mt-2">Introduceți suma finală de plată pentru pacientul <strong>@PaymentAppt.PatientName</strong>.</div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 p-4 pt-0">
+                    <button type="button" class="btn btn-light" @onclick="OnClose">Anulează</button>
+                    <button type="button" class="btn btn-success px-4" @onclick="OnProcess" disabled="@(PaymentAmount <= 0 || ProcessingId == PaymentAppt.Id)">
+                         @if (ProcessingId == PaymentAppt.Id) { <span class="spinner-border spinner-border-sm me-2"></span> }
+                         Confirmă și Încasează
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public AppointmentDto? PaymentAppt { get; set; }
+    [Parameter] public decimal PaymentAmount { get; set; }
+    [Parameter] public Guid? ProcessingId { get; set; }
+    
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnProcess { get; set; }
+    [Parameter] public EventCallback<decimal> PaymentAmountChanged { get; set; }
+
+    private async Task OnAmountChanged(ChangeEventArgs e)
+    {
+        if (decimal.TryParse(e.Value?.ToString(), out decimal amount))
+        {
+            await PaymentAmountChanged.InvokeAsync(amount);
+        }
+    }
+}
+

@@ -19,6 +19,7 @@ public class GetPatientAppointmentsQueryHandler : IRequestHandler<GetPatientAppo
     {
         var appointments = await _context.Appointments
             .Where(a => a.PatientId == request.PatientId)
+            .OrderByDescending(a => a.StartAt)
             .ToListAsync(cancellationToken);
 
         var dentistIds = appointments.Select(a => a.DentistId.ToString()).Distinct().ToList();

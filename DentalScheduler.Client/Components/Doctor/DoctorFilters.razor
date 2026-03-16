@@ -1,0 +1,100 @@
+﻿@using DentalScheduler.Client.Models
+
+<div class="card bg-light border-0 mb-4 p-3 rounded-3 shadow-sm">
+    <div class="row g-3 align-items-center">
+        <div class="col-auto">
+            <label for="filterDate" class="col-form-label fw-bold small text-uppercase ls-1">Filtrează după dată:</label>
+        </div>
+        <div class="col-auto">
+            <input type="date" id="filterDate" class="form-control" 
+                   value="@(FilterDate?.ToString("yyyy-MM-dd"))" 
+                   @onchange="OnDateChanged" />
+        </div>
+        <div class="col-auto">
+            @if (FilterDate.HasValue)
+            {
+                <button class="btn btn-outline-secondary btn-sm" @onclick="PrepareClearDateFilter">
+                    <i class="bi bi-x-lg"></i> Șterge filtrul
+                </button>
+            }
+        </div>
+            <div class="col-auto ms-auto">
+                <button class="btn btn-primary btn-sm px-4" @onclick="OnApplyFilter">
+                    <i class="bi bi-search me-1"></i> Aplică
+                </button>
+        </div>
+    </div>
+</div>
+
+@* Filter Tabs - Modern Pills *@
+<div class="d-flex justify-content-center mb-4">
+    <div class="bg-white p-2 rounded-pill shadow-sm d-inline-flex gap-2 border">
+        <button class="btn btn-sm rounded-pill px-4 fw-bold @(ActiveFilter == -1 ? "btn-dark" : "btn-light text-muted bg-transparent border-0")" 
+                @onclick="() => SetFilter(-1)">
+            Toate
+        </button>
+        <button class="btn btn-sm rounded-pill px-4 fw-bold @(ActiveFilter == 0 ? "btn-warning text-dark" : "btn-light text-muted bg-transparent border-0")" 
+                @onclick="() => SetFilter(0)">
+            În aşteptare
+            @if(Appointments.Count(a => a.Status == 0) > 0) { <span class="badge bg-white text-dark ms-2 rounded-circle">@Appointments.Count(a => a.Status == 0)</span> }
+        </button>
+        <button class="btn btn-sm rounded-pill px-4 fw-bold @(ActiveFilter == 1 ? "btn-info text-white" : "btn-light text-muted bg-transparent border-0")" 
+                @onclick="() => SetFilter(1)">
+            Acceptate
+        </button>
+            <button class="btn btn-sm rounded-pill px-4 fw-bold @(ActiveFilter == 4 ? "btn-primary" : "btn-light text-muted bg-transparent border-0")" 
+                @onclick="() => SetFilter(4)">
+            Confirmate
+        </button>
+        <button class="btn btn-sm rounded-pill px-4 fw-bold @(ActiveFilter == 2 ? "btn-danger" : "btn-light text-muted bg-transparent border-0")" 
+                @onclick="() => SetFilter(2)">
+            Respinse
+        </button>
+        <button class="btn btn-sm rounded-pill px-4 fw-bold @(ActiveFilter == 5 ? "btn-success" : "btn-light text-muted bg-transparent border-0")" 
+                @onclick="() => SetFilter(5)">
+            Completate
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public DateTime? FilterDate { get; set; }
+    [Parameter] public EventCallback<DateTime?> FilterDateChanged { get; set; }
+    
+    [Parameter] public int ActiveFilter { get; set; }
+    [Parameter] public EventCallback<int> ActiveFilterChanged { get; set; }
+
+    [Parameter] public List<AppointmentDto> Appointments { get; set; } = new();
+    
+    [Parameter] public EventCallback OnApply { get; set; }
+    [Parameter] public EventCallback OnClearDate { get; set; }
+
+    private async Task OnDateChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out DateTime date))
+        {
+            await FilterDateChanged.InvokeAsync(date);
+        }
+        else 
+        {
+            await FilterDateChanged.InvokeAsync(null);
+        }
+    }
+
+    private async Task PrepareClearDateFilter()
+    {
+        await OnClearDate.InvokeAsync();
+    }
+
+    private async Task OnApplyFilter()
+    {
+        await OnApply.InvokeAsync();
+    }
+
+    private async Task SetFilter(int filter)
+    {
+        ActiveFilter = filter;
+        await ActiveFilterChanged.InvokeAsync(filter);
+    }
+}
+
