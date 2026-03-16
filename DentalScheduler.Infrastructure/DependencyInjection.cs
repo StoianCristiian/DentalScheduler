@@ -2,6 +2,7 @@
 using DentalScheduler.Application.Interfaces;
 using DentalScheduler.Infrastructure.Identity;
 using DentalScheduler.Infrastructure.Persistance;
+using DentalScheduler.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -30,6 +31,8 @@ public static class DependencyInjection
 
         services.AddAuthentication()
             .AddBearerToken(IdentityConstants.BearerScheme);
+
+        services.AddScoped<IIdentityService, IdentityService>();
 
         return services;
     }

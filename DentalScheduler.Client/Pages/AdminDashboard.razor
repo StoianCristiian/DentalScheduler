@@ -3,9 +3,19 @@
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "Admin")]
 @inject HttpClient Http
-@inject IJSRuntime JS
 
 <div class="container mt-4 mb-5">
+    @if (!string.IsNullOrEmpty(alertMessage))
+    {
+        <div class="alert custom-alert @alertClass d-flex align-items-center mb-4 animate-slide-in shadow-sm" role="alert">
+            <i class="@alertIcon fs-4 me-3"></i>
+            <div class="flex-grow-1">
+                 @alertMessage
+            </div>
+            <button type="button" class="btn-close btn-close-white shadow-none" aria-label="Close" @onclick="CloseAlert"></button>
+        </div>
+    }
+
     <h3 class="mb-4 fw-bold text-primary">Admin Dashboard</h3>
 
     @if (isLoadingStats)
@@ -116,7 +126,8 @@
                                         {
                                             <select class="form-select form-select-sm w-auto shadow-sm border-0 bg-light" 
                                                     style="min-width: 140px; cursor: pointer;"
-                                                    @onchange="@(e => ChangeRole(user, e.Value.ToString()))"
+                                                    value=""
+                                                    @onchange="@(e => InitiateRoleChange(user, e.Value?.ToString()))"
                                                     disabled="@(processingUserId != null)">
                                                 <option value="" selected disabled>Schimbă...</option>
                                                 <option value="Admin">Admin</option>
@@ -137,6 +148,33 @@
             }
         </div>
     }
+    
+    @* Custom Confirmation Modal *@
+    @if (showConfirmModal)
+    {
+        <div class="modal-backdrop fade show"></div>
+        <div class="modal fade show d-block" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content border-0 shadow-lg rounded-4">
+                    <div class="modal-body p-4 text-center">
+                        <div class="mb-3">
+                            <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                                <i class="bi bi-question-lg text-primary fs-1"></i>
+                            </div>
+                        </div>
+                        <h4 class="fw-bold mb-2">Confirmare acțiune</h4>
+                        <p class="text-secondary mb-4">
+                            Ești sigur că vrei să schimbi rolul utilizatorului <strong>@pendingUser?.FullName</strong> în <strong class="text-primary">@TranslateRole(pendingNewRole!)</strong>?
+                        </p>
+                        <div class="d-flex justify-content-center gap-3">
+                            <button type="button" class="btn btn-light rounded-pill px-4" @onclick="CancelRoleChange">Anulează</button>
+                            <button type="button" class="btn btn-primary rounded-pill px-4" @onclick="ConfirmRoleChange">Confirmă</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 </div>
 
 @code {
@@ -145,6 +183,14 @@
     private bool isLoadingStats = true;
     private bool isLoadingUsers = true;
     private string? processingUserId;
+    private string? alertMessage;
+    private string alertClass = "alert-success";
+    private string alertIcon = "bi bi-check-circle-fill";
+
+    // Modal state
+    private bool showConfirmModal = false;
+    private UserWithRoleDto? pendingUser;
+    private string? pendingNewRole;
 
     protected override async Task OnInitializedAsync()
     {
@@ -182,17 +228,36 @@
         }
     }
 
-    private async Task ChangeRole(UserWithRoleDto user, string? newRole)
+    private void InitiateRoleChange(UserWithRoleDto user, string? newRole)
     {
         if (string.IsNullOrEmpty(newRole) || user.Role == newRole) return;
+        
+        pendingUser = user;
+        pendingNewRole = newRole;
+        showConfirmModal = true;
+    }
 
-        bool confirmed = await JS.InvokeAsync<bool>("confirm", $"Ești sigur că vrei să schimbi rolul lui {user.FullName} în '{TranslateRole(newRole)}'?");
-        if (!confirmed) 
-        {
-            // Reset dropdown visual state by re-rendering list potentially, or accept UI glitch until refresh
-             // Ideally we force re-render, but for now simple refresh helps or just let it look selected until refresh
-             return; 
-        }
+    private void CancelRoleChange()
+    {
+        showConfirmModal = false;
+        pendingUser = null;
+        pendingNewRole = null;
+        // Optional: Force re-render to reset dropdown selection if needed, 
+        // though simpler is to let user re-select.
+        StateHasChanged();
+    }
+
+    private async Task ConfirmRoleChange()
+    {
+        if (pendingUser == null || string.IsNullOrEmpty(pendingNewRole)) return;
+        
+        var user = pendingUser;
+        var newRole = pendingNewRole;
+        
+        // Close modal
+        showConfirmModal = false;
+        pendingUser = null;
+        pendingNewRole = null;
 
         processingUserId = user.Id;
         StateHasChanged();
@@ -204,22 +269,44 @@
             if (response.IsSuccessStatusCode)
             {
                 user.Role = newRole;
-                await LoadData(); // Reload stats and list to be sure
+                ShowAlert("Rolul utilizatorului a fost actualizat cu succes!", "alert-success", "bi bi-check-circle-fill");
+                await LoadData(); 
             }
             else
             {
                 var error = await response.Content.ReadAsStringAsync();
-                await JS.InvokeVoidAsync("alert", $"Eroare: {error}");
+                ShowAlert($"Eroare: {error}", "alert-danger", "bi bi-exclamation-triangle-fill");
             }
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", $"Eroare de rețea: {ex.Message}");
+            ShowAlert($"Eroare de rețea: {ex.Message}", "alert-danger", "bi bi-wifi-off");
         }
         finally
         {
             processingUserId = null;
+            StateHasChanged();
         }
+    }
+
+    private void ShowAlert(string message, string cssClass, string icon)
+    {
+        alertMessage = message;
+        alertClass = cssClass;
+        alertIcon = icon;
+        StateHasChanged();
+        
+        // Auto-hide after 5 seconds
+        _ = Task.Delay(5000).ContinueWith(_ => 
+        {
+            alertMessage = null;
+            InvokeAsync(StateHasChanged);
+        });
+    }
+
+    private void CloseAlert()
+    {
+        alertMessage = null;
     }
 
     private string GetRoleBadgeClass(string role) => role switch
@@ -238,4 +325,3 @@
         _ => role
     };
 }
-
