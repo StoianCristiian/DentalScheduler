@@ -1,0 +1,85 @@
+﻿@using DentalScheduler.Client.Models
+
+<div class="row mb-5 g-4">
+    @* Card - În Așteptare *@
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100 overflow-hidden card-hover-effect bg-white">
+            <div class="card-body p-4 position-relative">
+                <div class="d-flex align-items-center mb-4">
+                        <div class="rounded-3 bg-warning bg-opacity-10 text-warning p-3 me-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                            <i class="bi bi-hourglass-split fs-5"></i>
+                        </div>
+                        <h6 class="mb-0 fw-bold text-muted text-uppercase small ls-1">În Așteptare</h6>
+                </div>
+                <div class="d-flex align-items-baseline">
+                    <h2 class="mb-0 fw-bold display-5 text-dark">@Appointments.Count(a => a.Status == 0)</h2>
+                    <span class="ms-2 text-muted small">cereri</span>
+                </div>
+                @* Decorative Background Icon *@
+                <i class="bi bi-hourglass-split position-absolute text-warning opacity-10" style="font-size: 8rem; right: -2rem; bottom: -2rem; transform: rotate(-15deg); pointer-events: none;"></i>
+            </div>
+        </div>
+    </div>
+
+    @* Card - Acceptate *@
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100 overflow-hidden card-hover-effect bg-white">
+            <div class="card-body p-4 position-relative">
+                <div class="d-flex align-items-center mb-4">
+                        <div class="rounded-3 bg-info bg-opacity-10 text-info p-3 me-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                            <i class="bi bi-calendar-check fs-5"></i>
+                        </div>
+                        <h6 class="mb-0 fw-bold text-muted text-uppercase small ls-1">Programate</h6>
+                </div>
+                <div class="d-flex align-items-baseline">
+                    <h2 class="mb-0 fw-bold display-5 text-dark">@Appointments.Count(a => a.Status == 1 || a.Status == 4)</h2>
+                    <span class="ms-2 text-muted small">pacienți</span>
+                </div>
+                    <i class="bi bi-calendar-check position-absolute text-info opacity-10" style="font-size: 8rem; right: -2rem; bottom: -2rem; transform: rotate(-15deg); pointer-events: none;"></i>
+            </div>
+        </div>
+    </div>
+
+    @* Card - Completate *@
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100 overflow-hidden card-hover-effect bg-white">
+            <div class="card-body p-4 position-relative">
+                <div class="d-flex align-items-center mb-4">
+                        <div class="rounded-3 bg-success bg-opacity-10 text-success p-3 me-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                            <i class="bi bi-cash-coin fs-5"></i>
+                        </div>
+                        <h6 class="mb-0 fw-bold text-muted text-uppercase small ls-1">Încasate</h6>
+                </div>
+                <div class="d-flex align-items-baseline">
+                    <h2 class="mb-0 fw-bold display-5 text-dark">@Appointments.Count(a => a.Status == 5)</h2>
+                    <span class="ms-2 text-muted small">total</span>
+                </div>
+                <i class="bi bi-cash-coin position-absolute text-success opacity-10" style="font-size: 8rem; right: -2rem; bottom: -2rem; transform: rotate(-15deg); pointer-events: none;"></i>
+            </div>
+        </div>
+    </div>
+
+    @* Card - Total *@
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100 overflow-hidden card-hover-effect bg-primary text-white bg-gradient-primary">
+            <div class="card-body p-4 position-relative">
+                <div class="d-flex align-items-center mb-4">
+                        <div class="rounded-3 bg-white bg-opacity-25 text-white p-3 me-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                            <i class="bi bi-people fs-5"></i>
+                        </div>
+                        <h6 class="mb-0 fw-bold text-white text-opacity-75 text-uppercase small ls-1">Total</h6>
+                </div>
+                <div class="d-flex align-items-baseline">
+                    <h2 class="mb-0 fw-bold display-5">@Appointments.Count</h2>
+                    <span class="ms-2 text-white text-opacity-75 small">programări</span>
+                </div>
+                <i class="bi bi-grid-3x3-gap position-absolute text-white opacity-10" style="font-size: 8rem; right: -2rem; bottom: -2rem; transform: rotate(-15deg); pointer-events: none;"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<AppointmentDto> Appointments { get; set; } = new();
+}
+

@@ -34,8 +34,7 @@ public class CreateAppointmentCommandHandler : IRequestHandler<CreateAppointment
             StartAt = request.StartAt,
             EndAt = request.EndAt,
             Notes = request.Notes,
-            TreatmentType = request.TreatmentType,
-            Status = AppointmentStatus.Pending
+            TreatmentType = request.TreatmentType
         };
 
         _context.Appointments.Add(appointment);

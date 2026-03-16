@@ -9,6 +9,7 @@ public record UpdateAppointmentStatusCommand : IRequest<bool>
 {
     public Guid AppointmentId { get; init; }
     public AppointmentStatus Status { get; init; }
+    public decimal? Cost { get; init; }
 }
 
 public class UpdateAppointmentStatusCommandHandler : IRequestHandler<UpdateAppointmentStatusCommand, bool>
@@ -24,12 +25,16 @@ public class UpdateAppointmentStatusCommandHandler : IRequestHandler<UpdateAppoi
     {
         var appointment = await _context.Appointments
             .FirstOrDefaultAsync(a => a.Id == request.AppointmentId, cancellationToken);
-
+        
         if (appointment == null) return false;
 
-        appointment.Status = request.Status;
-        await _context.SaveChangesAsync(cancellationToken);
+        appointment.SetStatus(request.Status);
+        if (request.Cost.HasValue)
+        {
+            appointment.SetCost(request.Cost.Value);
+        }
 
+        await _context.SaveChangesAsync(cancellationToken);
         return true;
     }
 }

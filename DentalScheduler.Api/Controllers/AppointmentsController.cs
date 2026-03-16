@@ -31,8 +31,8 @@ public class AppointmentsController : ControllerBase
 
     // GET api/appointments/doctor/{doctorId}
     [HttpGet("doctor/{doctorId:guid}")]
-    public async Task<ActionResult<List<AppointmentDto>>> GetByDoctor(Guid doctorId)
-        => await _mediator.Send(new GetDoctorAppointmentsQuery(doctorId));
+    public async Task<ActionResult<List<AppointmentDto>>> GetByDoctor(Guid doctorId, [FromQuery] DateTime? date)
+        => await _mediator.Send(new GetDoctorAppointmentsQuery(doctorId, date));
 
     // POST api/appointments
     [HttpPost]
@@ -49,7 +49,8 @@ public class AppointmentsController : ControllerBase
         var success = await _mediator.Send(new UpdateAppointmentStatusCommand
         {
             AppointmentId = id,
-            Status = request.Status
+            Status = request.Status,
+            Cost = request.Cost
         });
 
         return success ? NoContent() : NotFound();
