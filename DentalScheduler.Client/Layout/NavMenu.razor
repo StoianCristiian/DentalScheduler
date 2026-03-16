@@ -23,7 +23,15 @@
                 </li>
                 @if (isAuthenticated)
                 {
-                    @if (isDoctor)
+                    @if (isAdmin)
+                    {
+                        <li class="nav-item">
+                            <NavLink class="nav-link" href="admin-dashboard">
+                                📊 Dashboard Admin
+                            </NavLink>
+                        </li>
+                    }
+                    else if (isDoctor)
                     {
                         <li class="nav-item">
                             <NavLink class="nav-link" href="doctor-dashboard">
@@ -86,6 +94,7 @@
     private bool collapseNavMenu = true;
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
     private bool isAuthenticated;
+    private bool isAdmin;
     private bool isDoctor;
     private string displayName = "Utilizator";
     private string? profilePictureUrl;
@@ -109,6 +118,7 @@
         var user = authState.User;
 
         isAuthenticated = user.Identity?.IsAuthenticated ?? false;
+        isAdmin = user.IsInRole("Admin");
         isDoctor = user.IsInRole("Doctor");
 
         if (isAuthenticated)

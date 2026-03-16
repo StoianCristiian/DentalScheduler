@@ -1,0 +1,241 @@
+﻿@page "/admin-dashboard"
+@using DentalScheduler.Client.Models
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin")]
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<div class="container mt-4 mb-5">
+    <h3 class="mb-4 fw-bold text-primary">Admin Dashboard</h3>
+
+    @if (isLoadingStats)
+    {
+        <div class="text-center my-5 animate-fade-in">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted fw-semibold">Se încarcă statisticile...</p>
+        </div>
+    }
+    else if (stats != null)
+    {
+        <div class="row mb-5 animate-fade-in">
+            <div class="col-md-3">
+                <div class="card text-white bg-primary bg-gradient mb-3 shadow-sm border-0 h-100">
+                    <div class="card-body d-flex flex-column justify-content-between">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h5 class="card-title text-uppercase small opacity-75 fw-bold ls-1">Pacienți</h5>
+                            <i class="bi bi-people-fill fs-4 opacity-50"></i>
+                        </div>
+                        <p class="card-text display-5 fw-bold mb-0">@stats.TotalPatients</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-success bg-gradient mb-3 shadow-sm border-0 h-100">
+                    <div class="card-body d-flex flex-column justify-content-between">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h5 class="card-title text-uppercase small opacity-75 fw-bold ls-1">Doctori</h5>
+                            <i class="bi bi-heart-pulse-fill fs-4 opacity-50"></i>
+                        </div>
+                        <p class="card-text display-5 fw-bold mb-0">@stats.TotalDoctors</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-info bg-gradient mb-3 shadow-sm border-0 h-100">
+                    <div class="card-body d-flex flex-column justify-content-between">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h5 class="card-title text-uppercase small opacity-75 fw-bold ls-1">Programări</h5>
+                            <i class="bi bi-calendar-check-fill fs-4 opacity-50"></i>
+                        </div>
+                        <p class="card-text display-5 fw-bold mb-0">@stats.TotalAppointments</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-warning bg-gradient mb-3 shadow-sm border-0 h-100">
+                    <div class="card-body d-flex flex-column justify-content-between">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h5 class="card-title text-uppercase small opacity-75 fw-bold ls-1">Venituri</h5>
+                            <i class="bi bi-cash-stack fs-4 opacity-50"></i>
+                        </div>
+                        <p class="card-text display-6 fw-bold mb-0">@stats.TotalRevenue.ToString("N0") <span class="fs-6 opacity-75">RON</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="fw-bold m-0"><i class="bi bi-person-gear me-2 text-primary"></i>Administrare Utilizatori</h4>
+        <button class="btn btn-outline-primary btn-sm rounded-pill px-3" @onclick="LoadData">
+            <i class="bi bi-arrow-clockwise me-1"></i> Reîmprospătează
+        </button>
+    </div>
+
+    @if (isLoadingUsers)
+    {
+        <div class="text-center my-5">
+            <div class="spinner-border text-secondary" role="status"></div>
+            <p class="mt-2 text-muted fw-semibold">Se încarcă lista utilizatorilor...</p>
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm border-0 rounded-4 overflow-hidden animate-fade-in">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-secondary small text-uppercase ls-1">
+                        <tr>
+                            <th class="border-0 py-3 ps-4">Utilizator</th>
+                            <th class="border-0 py-3">Email</th>
+                            <th class="border-0 py-3">Rol Curent</th>
+                            <th class="border-0 py-3 pe-4 text-end">Modifică Rol</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in users)
+                        {
+                            <tr>
+                                <td class="ps-4 py-3">
+                                    <div class="fw-bold text-dark">@user.FullName</div>
+                                    <div class="text-muted small d-md-none">@user.Email</div>
+                                </td>
+                                <td class="py-3 text-muted">@user.Email</td>
+                                <td class="py-3">
+                                    <span class="badge rounded-pill px-3 py-2 @GetRoleBadgeClass(user.Role)">
+                                        @TranslateRole(user.Role)
+                                    </span>
+                                </td>
+                                <td class="py-3 pe-4 text-end">
+                                    <div class="d-flex justify-content-end align-items-center gap-2">
+                                        @if (processingUserId == user.Id)
+                                        {
+                                            <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                                        }
+                                        else
+                                        {
+                                            <select class="form-select form-select-sm w-auto shadow-sm border-0 bg-light" 
+                                                    style="min-width: 140px; cursor: pointer;"
+                                                    @onchange="@(e => ChangeRole(user, e.Value.ToString()))"
+                                                    disabled="@(processingUserId != null)">
+                                                <option value="" selected disabled>Schimbă...</option>
+                                                <option value="Admin">Admin</option>
+                                                <option value="Doctor">Doctor</option>
+                                                <option value="Patient">Pacient</option>
+                                            </select>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            @if (users.Count == 0)
+            {
+               <div class="text-center py-5 text-muted">Nu există utilizatori înregistrați.</div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private AdminDashboardStats? stats;
+    private List<UserWithRoleDto> users = new();
+    private bool isLoadingStats = true;
+    private bool isLoadingUsers = true;
+    private string? processingUserId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoadingStats = true;
+        isLoadingUsers = true;
+        StateHasChanged();
+
+        try
+        {
+            stats = await Http.GetFromJsonAsync<AdminDashboardStats>("api/admin/stats");
+            isLoadingStats = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading stats: {ex.Message}");
+            isLoadingStats = false;
+        }
+
+        try
+        {
+            users = await Http.GetFromJsonAsync<List<UserWithRoleDto>>("api/admin/users") ?? new();
+            isLoadingUsers = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading users: {ex.Message}");
+            isLoadingUsers = false;
+        }
+    }
+
+    private async Task ChangeRole(UserWithRoleDto user, string? newRole)
+    {
+        if (string.IsNullOrEmpty(newRole) || user.Role == newRole) return;
+
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", $"Ești sigur că vrei să schimbi rolul lui {user.FullName} în '{TranslateRole(newRole)}'?");
+        if (!confirmed) 
+        {
+            // Reset dropdown visual state by re-rendering list potentially, or accept UI glitch until refresh
+             // Ideally we force re-render, but for now simple refresh helps or just let it look selected until refresh
+             return; 
+        }
+
+        processingUserId = user.Id;
+        StateHasChanged();
+
+        try
+        {
+            var response = await Http.PutAsJsonAsync($"api/admin/users/{user.Id}/role", new UpdateRoleRequest { NewRole = newRole });
+            
+            if (response.IsSuccessStatusCode)
+            {
+                user.Role = newRole;
+                await LoadData(); // Reload stats and list to be sure
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("alert", $"Eroare: {error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Eroare de rețea: {ex.Message}");
+        }
+        finally
+        {
+            processingUserId = null;
+        }
+    }
+
+    private string GetRoleBadgeClass(string role) => role switch
+    {
+        "Admin" => "bg-danger bg-opacity-10 text-danger border border-danger",
+        "Doctor" => "bg-success bg-opacity-10 text-success border border-success",
+        "Patient" => "bg-info bg-opacity-10 text-info border border-info",
+        _ => "bg-secondary text-white"
+    };
+
+    private string TranslateRole(string role) => role switch
+    {
+        "Admin" => "Admin",
+        "Doctor" => "Doctor",
+        "Patient" => "Pacient",
+        _ => role
+    };
+}
+
