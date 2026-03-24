@@ -41,15 +41,139 @@
         IsLoading="isLoading"
         ProcessingId="processingId"
         UpdateStatus="UpdateStatus"
-        OpenPaymentModal="OpenPaymentModal" />
+        OpenPriceModal="OpenPriceModal"
+        OpenFinalModal="OpenFinalModal" />
 </div>
 
-<PaymentModal 
-    PaymentAppt="paymentAppt"
-    @bind-PaymentAmount="paymentAmount"
-    ProcessingId="processingId"
-    OnClose="ClosePaymentModal"
-    OnProcess="ProcessPayment" />
+@* Price Setting Modal *@
+@if (priceAppt != null)
+{
+    <div class="modal-backdrop fade show" style="background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px);"></div>
+    <div class="modal fade show d-block animate-fade-in" tabindex="-1" role="dialog" aria-modal="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="modal-header border-bottom-0 p-4 bg-light">
+                    <div>
+                        <h5 class="modal-title fw-bold text-primary mb-1">
+                            <i class="bi bi-cash-coin me-2"></i>Setează Preț
+                        </h5>
+                        <p class="text-muted small mb-0">Stabilește costul pentru aceasta programare.</p>
+                    </div>
+                    <button type="button" class="btn-close shadow-none" @onclick="ClosePriceModal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Pacient</label>
+                        <div class="form-control bg-light border-0">@priceAppt.PatientName</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tratament</label>
+                        <div class="form-control bg-light border-0">@priceAppt.TreatmentType</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-secondary small text-uppercase ls-1">Preț (RON)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-currency-exchange"></i></span>
+                            <input type="number" class="form-control border-start-0 ps-0" 
+                                   @bind="priceAmount" 
+                                   placeholder="0.00" 
+                                   step="0.01" 
+                                   min="0"
+                                   @onfocus="() => priceAmount = priceAmount == 0 ? null : priceAmount" />
+                        </div>
+                        <small class="text-muted">Introdu suma pe care o vei percepe pentru acest tratament.</small>
+                    </div>
+
+                    <div class="alert alert-info border-start border-4 mb-4">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        <small>După ce setezi prețul, pacientul va vedea 3 opțiuni de plată:</small>
+                        <ul class="mb-0 mt-2 small">
+                            <li>💳 Plată cu Stripe</li>
+                            <li>💰 Plată la cabinet (cash/POS)</li>
+                            <li>❌ Respinge programarea</li>
+                        </ul>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-light px-4 fw-medium" @onclick="ClosePriceModal">Anulează</button>
+                        <button type="button" class="btn btn-primary px-4 fw-medium shadow-sm" 
+                                @onclick="ProcessPrice"
+                                disabled="@(processingId != null || priceAmount <= 0)">
+                            @if (processingId != null)
+                            { <span class="spinner-border spinner-border-sm me-2"></span> }
+                            <i class="bi bi-check-lg me-1"></i>Confirmă Preț
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* Final Payment Modal *@
+@if (finalAppt != null)
+{
+    <div class="modal-backdrop fade show" style="background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px);"></div>
+    <div class="modal fade show d-block animate-fade-in" tabindex="-1" role="dialog" aria-modal="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="modal-header border-bottom-0 p-4 bg-light">
+                    <div>
+                        <h5 class="modal-title fw-bold text-success mb-1">
+                            <i class="bi bi-check-circle me-2"></i>Finalizează Programare
+                        </h5>
+                        <p class="text-muted small mb-0">Confirm ați finalizarea și adăugați costuri suplimentare dacă e nevoie.</p>
+                    </div>
+                    <button type="button" class="btn-close shadow-none" @onclick="CloseFinalModal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Pacient</label>
+                        <div class="form-control bg-light border-0">@finalAppt.PatientName</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Cost inițial</label>
+                        <div class="form-control bg-light border-0">
+                            <strong class="text-success">@finalAppt.Cost?.ToString("N0") RON</strong>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-secondary small text-uppercase ls-1">Costuri Suplimentare (RON)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-plus-circle"></i></span>
+                            <input type="number" class="form-control border-start-0 ps-0" 
+                                   @bind="additionalCost" 
+                                   placeholder="0.00" 
+                                   step="0.01" 
+                                   min="0" />
+                        </div>
+                        <small class="text-muted">Lasă 0 dacă nu sunt costuri suplimentare.</small>
+                    </div>
+
+                    <div class="alert alert-success border-start border-4 mb-4">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        <strong>Total final: @(((finalAppt.Cost ?? 0) + (additionalCost ?? 0)).ToString("N0")) RON</strong>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-light px-4 fw-medium" @onclick="CloseFinalModal">Anulează</button>
+                        <button type="button" class="btn btn-success px-4 fw-medium shadow-sm" 
+                                @onclick="ProcessFinal"
+                                disabled="@(processingId != null)">
+                            @if (processingId != null)
+                            { <span class="spinner-border spinner-border-sm me-2"></span> }
+                            <i class="bi bi-check-lg me-1"></i>Finalizează
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
     private List<AppointmentDto> appointments = new();
@@ -60,8 +184,10 @@
     private string? errorMessage;
     private Guid? processingId;
     private string? currentUserId;
-    private AppointmentDto? paymentAppt;
-    private decimal paymentAmount;
+    private AppointmentDto? priceAppt;
+    private decimal? priceAmount;
+    private AppointmentDto? finalAppt;
+    private decimal? additionalCost = 0;
 
     private IEnumerable<AppointmentDto> FilteredAppointments
     {
@@ -69,15 +195,12 @@
         {
             if (activeFilter == -1)
             {
-                // Tab-ul "Toate": arată doar programările din ziua selectată (dacă există filtru de dată)
-                // Excludem programările Pending din alte zile care au fost aduse doar pentru contor/tab-ul Pending
                 if (filterDate.HasValue)
                 {
                     return appointments.Where(a => a.StartAt.Date == filterDate.Value.Date);
                 }
                 return appointments;
             }
-            // Tab-uri specifice: arată tot ce e în listă cu statusul respectiv
             return appointments.Where(a => a.Status == activeFilter);
         }
     }
@@ -118,26 +241,29 @@
         LoadAppointments();
     }
 
-    private async Task UpdateStatus(Guid appointmentId, int status)
+    private async Task UpdateStatus(Guid appointmentId, int status, decimal? cost)
     {
         processingId = appointmentId;
         errorMessage = null;
         try
         {
-            var response = await Http.PutAsJsonAsync($"api/appointments/{appointmentId}/status", new { Status = status });
+            var response = await Http.PutAsJsonAsync($"api/appointments/{appointmentId}/status", new { Status = status, Cost = cost });
             if (response.IsSuccessStatusCode)
             {
                 var appt = appointments.FirstOrDefault(a => a.Id == appointmentId);
-                if (appt != null) appt.Status = status;
+                if (appt != null)
+                {
+                    appt.Status = status;
+                    if (cost.HasValue) appt.Cost = cost.Value;
+                }
                 
-                if (status == 1)
-                    successMessage = "Programarea a fost acceptată!";
-                else if (status == 2)
-                    successMessage = "Programarea a fost respinsă.";
-                else if (status == 5)
-                    successMessage = "Programare finalizată și plătită!";
-                else
-                    successMessage = "Statusul programării a fost actualizat.";
+                successMessage = status switch
+                {
+                    1 => "Preț setat! Pacientul va vedea opțiunile de plată.",
+                    2 => "Programarea a fost respinsă.",
+                    5 => "Programare finalizată!",
+                    _ => "Statusul a fost actualizat."
+                };
             }
             else
             {
@@ -148,47 +274,46 @@
         finally { processingId = null; }
     }
 
-    private void OpenPaymentModal(AppointmentDto appt)
+    private void OpenPriceModal(AppointmentDto appt)
     {
-        paymentAppt = appt;
-        paymentAmount = 0;
+        priceAppt = appt;
+        priceAmount = null;
     }
 
-    private void ClosePaymentModal()
+    private void ClosePriceModal()
     {
-        paymentAppt = null;
+        priceAppt = null;
+        priceAmount = null;
     }
 
-    private async Task ProcessPayment()
+    private async Task ProcessPrice()
     {
-        if (paymentAppt == null) return;
+        if (priceAppt == null || !priceAmount.HasValue || priceAmount <= 0) return;
 
-        processingId = paymentAppt.Id;
-        errorMessage = null;
-        try
-        {
-            var response = await Http.PutAsJsonAsync($"api/appointments/{paymentAppt.Id}/status", new { Status = 5, Cost = paymentAmount });
-            if (response.IsSuccessStatusCode)
-            {
-                paymentAppt.Status = 5;
-                paymentAppt.Cost = paymentAmount; // Update local view
-                successMessage = "Programare finalizată și încasată!";
-                ClosePaymentModal();
-            }
-            else
-            {
-                errorMessage = "Eroare la procesarea plății.";
-            }
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Eroare la procesarea plății: {ex.Message}";
-        }
-        finally
-        {
-            processingId = null;
-            ClosePaymentModal();
-            await LoadAppointments();
-        }
+        await UpdateStatus(priceAppt.Id, 1, priceAmount.Value);
+        ClosePriceModal();
+        await LoadAppointments();
+    }
+
+    private void OpenFinalModal(AppointmentDto appt)
+    {
+        finalAppt = appt;
+        additionalCost = 0;
+    }
+
+    private void CloseFinalModal()
+    {
+        finalAppt = null;
+        additionalCost = 0;
+    }
+
+    private async Task ProcessFinal()
+    {
+        if (finalAppt == null) return;
+
+        var totalCost = (finalAppt.Cost ?? 0) + (additionalCost ?? 0);
+        await UpdateStatus(finalAppt.Id, 5, totalCost);
+        CloseFinalModal();
+        await LoadAppointments();
     }
 }
