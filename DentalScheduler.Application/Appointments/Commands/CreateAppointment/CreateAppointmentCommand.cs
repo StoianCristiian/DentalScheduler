@@ -18,14 +18,24 @@ public record CreateAppointmentCommand : IRequest<Guid>
 public class CreateAppointmentCommandHandler : IRequestHandler<CreateAppointmentCommand, Guid>
 {
     private readonly IApplicationDbContext _context;
+    private readonly ICurrentUserService _currentUserService;
 
-    public CreateAppointmentCommandHandler(IApplicationDbContext context)
+    public CreateAppointmentCommandHandler(IApplicationDbContext context, ICurrentUserService currentUserService)
     {
         _context = context;
+        _currentUserService = currentUserService;
     }
 
     public async Task<Guid> Handle(CreateAppointmentCommand request, CancellationToken cancellationToken)
     {
+        var currentUserId = _currentUserService.GetCurrentUserId();
+        
+        // Prevent doctor from booking with themselves
+        if (!string.IsNullOrEmpty(currentUserId) && currentUserId == request.DentistId.ToString())
+        {
+            throw new InvalidOperationException("A doctor cannot schedule an appointment with themselves.");
+        }
+
         var appointment = new Appointment
         {
             Id = Guid.NewGuid(),

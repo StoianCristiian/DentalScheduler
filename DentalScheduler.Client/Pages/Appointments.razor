@@ -4,9 +4,13 @@
 @using System.ComponentModel.DataAnnotations
 @using System.Text.Json
 @using Blazored.LocalStorage
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
 @attribute [Authorize]
 @inject HttpClient Http
 @inject ILocalStorageService LocalStorage
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
 
 <PageTitle>Programările Mele</PageTitle>
 
@@ -91,15 +95,21 @@
                                     <td class="py-3"><span class="badge bg-light text-dark border fw-normal">@appt.TreatmentType</span></td>
                                     <td class="py-3 text-muted small">@appt.Notes</td>
                                     <td class="py-3 pe-4 text-end">
-                                        @if (appt.Status == 1) // Accepted by Doctor -> Patient Confirms
+                                        @if (appt.Status == 1) // Price set by doctor - Patient chooses payment method
                                         {
-                                            <button class="btn btn-primary btn-sm shadow-sm"
-                                                    @onclick="() => ConfirmAppointment(appt.Id)"
+                                            <button class="btn btn-success btn-sm shadow-sm"
+                                                    @onclick="() => OpenPaymentModal(appt)"
                                                     disabled="@(processingId == appt.Id)">
                                                 @if (processingId == appt.Id)
                                                 { <span class="spinner-border spinner-border-sm me-1"></span> }
-                                                <i class="bi bi-hand-thumbs-up me-1"></i> Confirmă
+                                                <i class="bi bi-credit-card me-1"></i> Confirmă Prezența
                                             </button>
+                                        }
+                                        else if (appt.Status == 4) // Confirmed and paid
+                                        {
+                                            <span class="badge rounded-pill px-3 py-2 bg-success bg-opacity-10 border border-success text-success">
+                                                ✅ Confirmat
+                                            </span>
                                         }
                                         else
                                         {
@@ -151,7 +161,7 @@
                                     <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-person-badge"></i></span>
                                     <InputSelect class="form-select border-start-0 ps-0" @bind-Value="newAppt.DentistId">
                                         <option value="">-- Alege medicul --</option>
-                                        @foreach (var d in doctors)
+                                        @foreach (var d in filteredDoctors)
                                         {
                                             <option value="@d.Id">Dr. @d.FullName</option>
                                         }
@@ -222,9 +232,129 @@
     </div>
 }
 
+@* Payment Modal - 3 Payment Options *@
+@if (paymentAppt != null)
+{
+    <div class="modal-backdrop fade show" style="background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px);"></div>
+    <div class="modal fade show d-block animate-fade-in" tabindex="-1" role="dialog" aria-modal="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="modal-header border-bottom-0 p-4 bg-light">
+                    <div>
+                        <h5 class="modal-title fw-bold text-primary mb-1">
+                            <i class="bi bi-credit-card me-2"></i>Confirmare Plată
+                        </h5>
+                        <p class="text-muted small mb-0">Alege metoda de plată pentru programare.</p>
+                    </div>
+                    <button type="button" class="btn-close shadow-none" @onclick="ClosePaymentModal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-4 p-3 bg-light rounded-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <small class="text-muted text-uppercase fw-bold ls-1">Pacient</small>
+                                <p class="mb-0 fw-semibold">@paymentAppt.DentistName</p>
+                            </div>
+                            <div class="text-end">
+                                <small class="text-muted text-uppercase fw-bold ls-1">Cost</small>
+                                <p class="mb-0 fw-bold text-success fs-5">@paymentAppt.Cost?.ToString("N0") RON</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="text-muted small mb-3">Selectează una din următoarele opțiuni:</p>
+
+                    <div class="d-grid gap-2">
+                        @* Option 1: Stripe Payment *@
+                        <button type="button" 
+                                class="@("btn btn-outline-primary btn-lg p-3 text-start shadow-sm hover-lift")"
+                                @onclick="@(async () => await ProcessPayment(paymentAppt.Id, "stripe"))"
+                                disabled="@(processingId != null)">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    <i class="bi bi-credit-card fs-4 text-primary"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <strong class="d-block">💳 Plată cu Stripe</strong>
+                                    <small class="text-muted">Cardă de credit/debit online</small>
+                                </div>
+                                @if (processingId == paymentAppt.Id)
+                                {
+                                    <span class="spinner-border spinner-border-sm text-primary"></span>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-chevron-right text-muted"></i>
+                                }
+                            </div>
+                        </button>
+
+                        @* Option 2: Cash/POS Payment *@
+                        <button type="button" 
+                                class="@("btn btn-outline-success btn-lg p-3 text-start shadow-sm hover-lift")"
+                                @onclick="@(async () => await ProcessPayment(paymentAppt.Id, "cash"))"
+                                disabled="@(processingId != null)">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    <i class="bi bi-cash-coin fs-4 text-success"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <strong class="d-block">💰 Plată la Cabinet</strong>
+                                    <small class="text-muted">Cash sau POS la sosire</small>
+                                </div>
+                                @if (processingId == paymentAppt.Id)
+                                {
+                                    <span class="spinner-border spinner-border-sm text-success"></span>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-chevron-right text-muted"></i>
+                                }
+                            </div>
+                        </button>
+
+                        @* Option 3: Reject *@
+                        <button type="button" 
+                                class="@("btn btn-outline-danger btn-lg p-3 text-start shadow-sm hover-lift")"
+                                @onclick="@(async () => await ProcessPayment(paymentAppt.Id, "reject"))"
+                                disabled="@(processingId != null)">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    <i class="bi bi-x-circle fs-4 text-danger"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <strong class="d-block">❌ Respinge Programarea</strong>
+                                    <small class="text-muted">Nu pot ajunge la programare</small>
+                                </div>
+                                @if (processingId == paymentAppt.Id)
+                                {
+                                    <span class="spinner-border spinner-border-sm text-danger"></span>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-chevron-right text-muted"></i>
+                                }
+                            </div>
+                        </button>
+                    </div>
+
+                    <div class="alert alert-info border-start border-4 mt-4 mb-0">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        <small>
+                            <strong>Atenție:</strong> Confirmarea prezenței te angajează să vii la programare.
+                            În caz de imposibilitate, anulează cu cel puțin 24h înainte.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private List<AppointmentDto> appointments = new();
     private List<DoctorDto> doctors = new();
+    private List<DoctorDto> filteredDoctors = new();
     private bool showModal = false;
     private bool isLoading = true;
     private bool isSaving = false;
@@ -232,8 +362,10 @@
     private string? errorMessage;
     private NewAppointmentModel newAppt = new();
     private string? currentUserId;
+    private bool isDoctor = false;
     private Guid? processingId;
     private const string ApiBaseUrl = "http://localhost:5062";
+    private AppointmentDto? paymentAppt;
 
     private string GetFullImageUrl(string? relativeUrl)
     {
@@ -254,14 +386,30 @@
             currentUserId = storedClaims?.FirstOrDefault(c => c.Type == "sub")?.Value;
         }
 
+        // Check if current user is a doctor
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        isDoctor = authState.User.IsInRole("Doctor");
+
         await LoadDoctors();
         await LoadAppointments();
     }
 
     private async Task LoadDoctors()
     {
-        try { doctors = await Http.GetFromJsonAsync<List<DoctorDto>>("api/doctors") ?? new(); }
-        catch { doctors = new(); }
+        try 
+        { 
+            doctors = await Http.GetFromJsonAsync<List<DoctorDto>>("api/doctors") ?? new();
+            // Filter out current doctor if user is a doctor
+            if (isDoctor && !string.IsNullOrEmpty(currentUserId))
+            {
+                filteredDoctors = doctors.Where(d => d.Id != currentUserId).ToList();
+            }
+            else
+            {
+                filteredDoctors = doctors;
+            }
+        }
+        catch { doctors = new(); filteredDoctors = new(); }
     }
 
     private async Task LoadAppointments()
@@ -270,7 +418,18 @@
         try
         {
             if (!string.IsNullOrEmpty(currentUserId))
-                appointments = await Http.GetFromJsonAsync<List<AppointmentDto>>($"api/appointments/patient/{currentUserId}") ?? new();
+            {
+                if (isDoctor)
+                {
+                    // Doctors see their scheduled appointments with other doctors
+                    appointments = await Http.GetFromJsonAsync<List<AppointmentDto>>($"api/appointments/patient/{currentUserId}") ?? new();
+                }
+                else
+                {
+                    // Patients see their appointments with doctors
+                    appointments = await Http.GetFromJsonAsync<List<AppointmentDto>>($"api/appointments/patient/{currentUserId}") ?? new();
+                }
+            }
         }
         catch (Exception ex) { errorMessage = $"Eroare la încărcarea programărilor: {ex.Message}"; }
         finally { isLoading = false; }
@@ -330,6 +489,16 @@
     private void ShowModal() => showModal = true;
     private void CloseModal() { showModal = false; newAppt = new NewAppointmentModel(); }
 
+    private void OpenPaymentModal(AppointmentDto appt)
+    {
+        paymentAppt = appt;
+    }
+
+    private void ClosePaymentModal()
+    {
+        paymentAppt = null;
+    }
+
     private async Task SaveAppointment()
     {
         isSaving = true;
@@ -371,6 +540,77 @@
         }
     }
 
+    private async Task ProcessPayment(Guid appointmentId, string paymentMethod)
+    {
+        processingId = appointmentId;
+        errorMessage = null;
+
+        try
+        {
+            if (paymentMethod == "reject")
+            {
+                // Status 3 = Cancelled
+                var response = await Http.PutAsJsonAsync($"api/appointments/{appointmentId}/status", new { Status = 3 });
+                if (response.IsSuccessStatusCode)
+                {
+                    var appt = appointments.FirstOrDefault(a => a.Id == appointmentId);
+                    if (appt != null) appt.Status = 3;
+                    successMessage = "Programarea a fost anulată.";
+                    ClosePaymentModal();
+                    await LoadAppointments();
+                }
+                else
+                {
+                    errorMessage = "Eroare la anularea programării.";
+                }
+            }
+            else if (paymentMethod == "stripe")
+            {
+                // Status 4 = Confirmed - ready for payment
+                var response = await Http.PutAsJsonAsync($"api/appointments/{appointmentId}/status", new { Status = 4 });
+                if (response.IsSuccessStatusCode)
+                {
+                    var appt = appointments.FirstOrDefault(a => a.Id == appointmentId);
+                    if (appt != null) appt.Status = 4;
+                    successMessage = "Ai confirmat prezența! Redirecționare către plată...";
+                    ClosePaymentModal();
+                    // Redirect to Stripe payment page (placeholder for now)
+                    await Task.Delay(1500);
+                    Navigation.NavigateTo($"/payment/stripe/{appointmentId}");
+                }
+                else
+                {
+                    errorMessage = "Eroare la confirmarea programării.";
+                }
+            }
+            else if (paymentMethod == "cash")
+            {
+                // Status 4 = Confirmed - will pay at cabinet
+                var response = await Http.PutAsJsonAsync($"api/appointments/{appointmentId}/status", new { Status = 4 });
+                if (response.IsSuccessStatusCode)
+                {
+                    var appt = appointments.FirstOrDefault(a => a.Id == appointmentId);
+                    if (appt != null) appt.Status = 4;
+                    successMessage = "Programare confirmată! Plăți la sosire.";
+                    ClosePaymentModal();
+                    await LoadAppointments();
+                }
+                else
+                {
+                    errorMessage = "Eroare la actualizarea statusului programării.";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Eroare: " + ex.Message;
+        }
+        finally
+        {
+            processingId = null;
+        }
+    }
+
     public class AppointmentDto
     {
         public Guid Id { get; set; }
@@ -379,7 +619,8 @@
         public string? DentistProfilePictureUrl { get; set; }
         public Guid DentistId { get; set; }
         public string? TreatmentType { get; set; }
-        public int Status { get; set; } // 0=Pending, 1=Confirmed, 2=Rejected
+        public decimal? Cost { get; set; }
+        public int Status { get; set; } // 0=Pending, 1=Price set, 2=Rejected, 3=Cancelled, 4=Confirmed, 5=Completed
         public string? Notes { get; set; }
     }
 

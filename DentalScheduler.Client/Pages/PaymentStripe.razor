@@ -1,0 +1,114 @@
+﻿@page "/payment/stripe/{appointmentId}"
+@using Microsoft.AspNetCore.Authorization
+@using System.Net.Http.Json
+@using Blazored.LocalStorage
+@attribute [Authorize]
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject ILocalStorageService LocalStorage
+
+<PageTitle>Plată cu Stripe</PageTitle>
+
+<div class="container mt-4 animate-fade-in">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <div class="mb-3">
+                            <i class="bi bi-credit-card" style="font-size: 3rem; color: #0d6efd;"></i>
+                        </div>
+                        <h2 class="fw-bold mb-2">Plată cu Stripe</h2>
+                        <p class="text-muted">Programare ID: <strong>@AppointmentId</strong></p>
+                    </div>
+
+                    <div class="alert alert-info border-start border-4 mb-4">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        <small>
+                            <strong>Funcționalitate în dezvoltare:</strong> 
+                            Integrarea cu Stripe va fi implementată în curând. 
+                            Pentru moment, aceasta este o pagină placeholder.
+                        </small>
+                    </div>
+
+                    <div class="bg-light p-4 rounded-3 mb-4">
+                        <h5 class="fw-bold mb-3">Detalii Plată</h5>
+                        <div class="row">
+                            <div class="col-6">
+                                <small class="text-muted text-uppercase fw-bold">Status</small>
+                                <p class="mb-0 fw-semibold">
+                                    <span class="badge bg-info">În curs de procesare</span>
+                                </p>
+                            </div>
+                            <div class="col-6 text-end">
+                                <small class="text-muted text-uppercase fw-bold">Metoda</small>
+                                <p class="mb-0 fw-semibold">💳 Stripe</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning border-start border-4 mb-4">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <small>
+                            <strong>Notă:</strong> Plata nu este procesată în acest moment. 
+                            Aceasta este o pagină de preview. Integrarea Stripe va fi adăugată în următoarea fază.
+                        </small>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-secondary flex-grow-1" @onclick="GoBack">
+                            <i class="bi bi-arrow-left me-2"></i>Înapoi la Programări
+                        </button>
+                        <button class="btn btn-primary flex-grow-1" @onclick="MarkAsCompleted">
+                            <i class="bi bi-check-circle me-2"></i>Marchează Completă
+                        </button>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="text-center text-muted small">
+                        <p class="mb-0">
+                            🔄 Stripe integration coming soon...
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string? AppointmentId { get; set; }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/appointments");
+    }
+
+    private async Task MarkAsCompleted()
+    {
+        if (string.IsNullOrEmpty(AppointmentId)) return;
+
+        try
+        {
+            if (Guid.TryParse(AppointmentId, out var appointmentId))
+            {
+                // Mark appointment as completed (Status 5)
+                var response = await Http.PutAsJsonAsync($"api/appointments/{appointmentId}/status", 
+                    new { Status = 5 });
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    await LocalStorage.RemoveItemAsync($"pending_payment_{AppointmentId}");
+                    Navigation.NavigateTo("/appointments");
+                }
+            }
+        }
+        catch
+        {
+            // Error handling
+        }
+    }
+}
+

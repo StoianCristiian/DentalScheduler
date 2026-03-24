@@ -42,7 +42,7 @@
                             <th class="border-0 py-3">Note</th>
                             <th class="border-0 py-3">Cost</th>
                             <th class="border-0 py-3">Status</th>
-                            <th class="border-0 py-3 pe-4 text-end" style="min-width: 160px;">Acţiuni</th>
+                            <th class="border-0 py-3 pe-4 text-end" style="min-width: 180px;">Acţiuni</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -80,33 +80,31 @@
                                     <span class="badge rounded-pill px-3 py-2 @GetStatusClass(appt.Status)">@GetStatusLabel(appt.Status)</span>
                                 </td>
                                 <td class="py-3 pe-4 text-end">
-                                    @if (appt.Status == 0) // Pending
+                                    @if (appt.Status == 0) // Pending - Doctor needs to accept and set price
                                     {
-                                        <div class="btn-group shadow-sm" role="group">
-                                            <button type="button" class="btn btn-success btn-sm"
-                                                    @onclick="() => OnUpdateStatus(appt.Id, 1)"
-                                                    disabled="@(ProcessingId == appt.Id)"
-                                                    title="Acceptă">
-                                                @if (ProcessingId == appt.Id)
-                                                { <span class="spinner-border spinner-border-sm"></span> }
-                                                else { <i class="bi bi-check-lg"></i> }
-                                            </button>
-                                            <button type="button" class="btn btn-danger btn-sm"
-                                                    @onclick="() => OnUpdateStatus(appt.Id, 2)"
-                                                    disabled="@(ProcessingId == appt.Id)"
-                                                    title="Respinge">
-                                                <i class="bi bi-x-lg"></i>
-                                            </button>
-                                        </div>
+                                        <button type="button" class="btn btn-primary btn-sm"
+                                                @onclick="() => OnOpenPriceModal(appt)"
+                                                disabled="@(ProcessingId == appt.Id)"
+                                                title="Setează preț și acceptă">
+                                            @if (ProcessingId == appt.Id)
+                                            { <span class="spinner-border spinner-border-sm me-1"></span> }
+                                            <i class="bi bi-cash-coin me-1"></i> Acceptă
+                                        </button>
+                                        <button type="button" class="btn btn-danger btn-sm ms-2"
+                                                @onclick="() => OnUpdateStatus(appt.Id, 2)"
+                                                disabled="@(ProcessingId == appt.Id)"
+                                                title="Respinge">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
                                     }
-                                    else if (appt.Status == 4) // Confirmed by Patient -> Doctor marks paid/completed
+                                    else if (appt.Status == 4) // Confirmed by Patient - Doctor finishes and adds final cost if needed
                                     {
-                                        <button class="btn btn-primary btn-sm"
-                                                @onclick="() => OnOpenPayment(appt)"
+                                        <button class="btn btn-success btn-sm"
+                                                @onclick="() => OnOpenFinalModal(appt)"
                                                 disabled="@(ProcessingId == appt.Id)">
                                             @if (ProcessingId == appt.Id)
                                             { <span class="spinner-border spinner-border-sm me-1"></span> }
-                                            <i class="bi bi-cash-coin me-1"></i> Încasează
+                                            <i class="bi bi-check-circle me-1"></i> Finalizează
                                         </button>
                                     }
                                     else
@@ -127,8 +125,9 @@
     [Parameter] public List<AppointmentDto> FilteredAppointments { get; set; } = new();
     [Parameter] public bool IsLoading { get; set; }
     [Parameter] public Guid? ProcessingId { get; set; }
-    [Parameter] public Func<Guid, int, Task> UpdateStatus { get; set; }
-    [Parameter] public Action<AppointmentDto> OpenPaymentModal { get; set; }
+    [Parameter] public Func<Guid, int, decimal?, Task>? UpdateStatus { get; set; }
+    [Parameter] public EventCallback<AppointmentDto> OpenPriceModal { get; set; }
+    [Parameter] public EventCallback<AppointmentDto> OpenFinalModal { get; set; }
 
     private decimal TotalRevenue => FilteredAppointments
         .Where(a => a.Status == 5)
@@ -138,13 +137,18 @@
     {
         if (UpdateStatus != null)
         {
-            await UpdateStatus(id, status);
+            await UpdateStatus(id, status, null);
         }
     }
 
-    private void OnOpenPayment(AppointmentDto appt)
+    private async Task OnOpenPriceModal(AppointmentDto appt)
     {
-        OpenPaymentModal?.Invoke(appt);
+        await OpenPriceModal.InvokeAsync(appt);
+    }
+
+    private async Task OnOpenFinalModal(AppointmentDto appt)
+    {
+        await OpenFinalModal.InvokeAsync(appt);
     }
     
     private string GetStatusClass(int status) => status switch
@@ -161,10 +165,10 @@
     private string GetStatusLabel(int status) => status switch
     {
         0 => "⏳ În așteptare",
-        1 => "📅 Programat",
+        1 => "💰 Preț setat - Așteaptă răspuns",
         2 => "❌ Respins",
         3 => "🚫 Anulat",
-        4 => "👍 Confirmat",
+        4 => "👍 Confirmat de pacient",
         5 => "✅ Finalizat",
         _ => "Necunoscut"
     };
