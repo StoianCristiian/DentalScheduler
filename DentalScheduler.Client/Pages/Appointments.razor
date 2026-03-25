@@ -540,74 +540,49 @@
         }
     }
 
-    private async Task ProcessPayment(Guid appointmentId, string paymentMethod)
+    private async Task ProcessPayment(Guid appointmentId, string method)
     {
         processingId = appointmentId;
-        errorMessage = null;
-
-        try
+        
+        if (method == "stripe")
         {
-            if (paymentMethod == "reject")
-            {
-                // Status 3 = Cancelled
-                var response = await Http.PutAsJsonAsync($"api/appointments/{appointmentId}/status", new { Status = 3 });
-                if (response.IsSuccessStatusCode)
-                {
-                    var appt = appointments.FirstOrDefault(a => a.Id == appointmentId);
-                    if (appt != null) appt.Status = 3;
-                    successMessage = "Programarea a fost anulată.";
-                    ClosePaymentModal();
-                    await LoadAppointments();
-                }
-                else
-                {
-                    errorMessage = "Eroare la anularea programării.";
-                }
-            }
-            else if (paymentMethod == "stripe")
-            {
-                // Status 4 = Confirmed - ready for payment
-                var response = await Http.PutAsJsonAsync($"api/appointments/{appointmentId}/status", new { Status = 4 });
-                if (response.IsSuccessStatusCode)
-                {
-                    var appt = appointments.FirstOrDefault(a => a.Id == appointmentId);
-                    if (appt != null) appt.Status = 4;
-                    successMessage = "Ai confirmat prezența! Redirecționare către plată...";
-                    ClosePaymentModal();
-                    // Redirect to Stripe payment page (placeholder for now)
-                    await Task.Delay(1500);
-                    Navigation.NavigateTo($"/payment/stripe/{appointmentId}");
-                }
-                else
-                {
-                    errorMessage = "Eroare la confirmarea programării.";
-                }
-            }
-            else if (paymentMethod == "cash")
-            {
-                // Status 4 = Confirmed - will pay at cabinet
-                var response = await Http.PutAsJsonAsync($"api/appointments/{appointmentId}/status", new { Status = 4 });
-                if (response.IsSuccessStatusCode)
-                {
-                    var appt = appointments.FirstOrDefault(a => a.Id == appointmentId);
-                    if (appt != null) appt.Status = 4;
-                    successMessage = "Programare confirmată! Plăți la sosire.";
-                    ClosePaymentModal();
-                    await LoadAppointments();
-                }
-                else
-                {
-                    errorMessage = "Eroare la actualizarea statusului programării.";
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            errorMessage = "Eroare: " + ex.Message;
-        }
-        finally
-        {
+            Navigation.NavigateTo($"/payment/stripe/{appointmentId}");
             processingId = null;
+            return;
+        }
+        else if (method == "cash")
+        {
+            // Just confirm for now, payment happens on site
+            await ConfirmAppointment(appointmentId);
+            ClosePaymentModal();
+        }
+        else if (method == "reject")
+        {
+             // Implement rejection logic if needed, currently we just map it to an API call or status update
+             // For now, let's assume we want to update status to Rejected (2)
+             try
+             {
+                 var response = await Http.PutAsJsonAsync($"api/appointments/{appointmentId}/status", new { Status = 2 });
+                 if (response.IsSuccessStatusCode)
+                 {
+                     var appt = appointments.FirstOrDefault(a => a.Id == appointmentId);
+                     if (appt != null) appt.Status = 2; // Rejected
+                     successMessage = "Ai refuzat programarea.";
+                 }
+                 else
+                 {
+                    errorMessage = "Nu s-a putut refuza programarea.";
+                 }
+             }
+             catch (Exception ex)
+             {
+                 errorMessage = $"Eroare: {ex.Message}";
+             }
+             finally 
+             {
+                 ClosePaymentModal();
+                 processingId = null;
+             }
         }
     }
 
@@ -622,6 +597,7 @@
         public decimal? Cost { get; set; }
         public int Status { get; set; } // 0=Pending, 1=Price set, 2=Rejected, 3=Cancelled, 4=Confirmed, 5=Completed
         public string? Notes { get; set; }
+        public bool IsPaid { get; set; }
     }
 
     public class DoctorDto

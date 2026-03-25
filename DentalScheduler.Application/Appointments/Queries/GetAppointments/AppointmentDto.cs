@@ -15,7 +15,8 @@ public record AppointmentDto(
     AppointmentStatus Status,
     string? PatientName,
     string? DentistName,
-    string? DentistProfilePictureUrl
+    string? DentistProfilePictureUrl,
+    bool IsPaid
 );
 
 public static class AppointmentExtensions
@@ -33,6 +34,7 @@ public static class AppointmentExtensions
             appointment.Status,
             patientName,
             dentistName,
-            dentistProfilePictureUrl
+            dentistProfilePictureUrl,
+            appointment.IsPaid
         );
 }

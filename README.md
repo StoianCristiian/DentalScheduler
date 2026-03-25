@@ -13,11 +13,13 @@ Un sistem modern de programări pentru cabinete stomatologice, bazat pe **.NET 1
 ### Backend (.NET API)
 - **Gestiune Programări:** CRUD complet folosind CQRS.
 - **Personal & Servicii:** Administrarea medicilor și a tipurilor de intervenții.
-- **Monetizare:** Suport pentru taxe de rezervare sau abonamente.
+- **Monetizare:** Suport pentru taxe de rezervare sau abonamente. **(INTEGRAT CU STRIPE)**
+- **Plăți Online:** Integrare completă cu **Stripe** pentru plăți securizate cu cardul, inclusiv Webhooks pentru confirmare automată.
 
 ### Frontend (Blazor WASM)
 - **Interfață Modernă:** Design responsiv și interactiv.
 - **Dashboard:** Statistici și grafice pentru administrarea cabinetului.
+- **Portal Pacient:** Programări online, istoric medical și plăți integrate.
 
 ---
 
@@ -60,14 +62,28 @@ Proiectul este structurat pe **Microservicii** și **Clean Architecture**:
    cd DentalScheduler
    ```
 
-2. **Pornește Infrastructura (Baza de Date)**
+2. **Configurează Variabilele de Mediu**
+   Creează un fișier `.env` în rădăcina proiectului și adaugă configurația (inclusiv cheile Stripe):
+   ```env
+   # Database
+   DB_PASSWORD=
+   DB_USER=
+   ConnectionStrings__DefaultConnection=
+
+   # Stripe Keys (Obține-le din dashboard.stripe.com)
+   STRIPE_PUBLISHABLEKEY=pk_test_...
+   STRIPE_SECRETKEY=sk_test_...
+   STRIPE_WEBHOOK_SECRET=whsec_...
+   ```
+
+3. **Pornește Infrastructura (Baza de Date)**
    Asigură-te că Docker Desktop rulează, apoi:
    ```bash
    docker-compose up -d
    ```
    Aceasta va porni SQL Server.
 
-3. **Configurează Backend-ul**
+4. **Configurează Backend-ul**
    - Asigură-te că ai fișierul `.env` în rădăcină (vezi `.env.example`).
    - Rulează migrările (automat la pornirea API-ului sau manual):
      ```bash
@@ -77,7 +93,7 @@ Proiectul este structurat pe **Microservicii** și **Clean Architecture**:
 
 4. **Accesează Aplicația**
    - **API Docs (Scalar):** `https://localhost:7174/scalar/v1`
-   - **Frontend:** (Urmează să fie configurat pe portul specificat în `launchSettings.json`)
+   - **Frontend:** `https://localhost:5289`
 
 ---
 
@@ -89,4 +105,3 @@ Proiectul este structurat pe **Microservicii** și **Clean Architecture**:
 
 ---
 *Proiect realizat pentru materia .NET - Facultate, Anul 3, Semestrul 2.*
-

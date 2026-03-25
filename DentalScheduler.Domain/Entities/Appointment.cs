@@ -10,8 +10,10 @@ public class Appointment : BaseEntity
     public DateTime EndAt { get; set; }
     public string? Notes { get; set; }
     public string? TreatmentType { get; set; }
-    public decimal? Cost { get; private set; }
+    public decimal? Cost { get; set; }
     public Enums.AppointmentStatus Status { get; private set; } = Enums.AppointmentStatus.Pending;
+    public string? StripePaymentIntentId { get; set; }
+    public bool IsPaid { get; set; }
 
     public void Confirm()
     {
