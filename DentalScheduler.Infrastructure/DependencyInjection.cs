@@ -36,6 +36,7 @@ public static class DependencyInjection
 
         services.AddScoped<IIdentityService, IdentityService>();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<IPaymentService, StripePaymentService>();
 
         return services;
     }

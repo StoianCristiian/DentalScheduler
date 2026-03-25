@@ -28,5 +28,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder); // Important pentru Identity
+        
+        // Configureăm tipul coloanei Cost pentru a evita warning-urile
+        modelBuilder.Entity<Appointment>()
+            .Property(a => a.Cost)
+            .HasColumnType("decimal(18,2)");
     }
 }

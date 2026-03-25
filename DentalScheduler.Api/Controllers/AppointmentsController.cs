@@ -36,10 +36,10 @@ public class AppointmentsController : ControllerBase
 
     // POST api/appointments
     [HttpPost]
-    public async Task<ActionResult<Guid>> Create([FromBody] CreateAppointmentCommand command)
+    public async Task<ActionResult<CreateAppointmentResponse>> Create([FromBody] CreateAppointmentCommand command)
     {
-        var id = await _mediator.Send(command);
-        return Ok(id);
+        var response = await _mediator.Send(command);
+        return Ok(response);
     }
 
     // PUT api/appointments/{id}/status
