@@ -3,6 +3,7 @@
 @using System.Net.Http.Json
 @using System.ComponentModel.DataAnnotations
 @using System.Text.Json
+@using System.Text.Json.Serialization
 @using Blazored.LocalStorage
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
@@ -20,9 +21,14 @@
             <h2 class="mb-0 fw-bold">📅 Programările Mele</h2>
             <p class="text-muted mb-0">Gestionează istoricul și viitoarele tale vizite</p>
         </div>
-        <button class="btn btn-primary btn-hover-effect shadow-sm" @onclick="ShowModal">
-            <i class="bi bi-plus-lg me-2"></i> Programare Nouă
-        </button>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary shadow-sm" @onclick="ShowSmartModal">
+                <i class="bi bi-lightbulb-fill me-2"></i> Recomandare Smart
+            </button>
+            <button class="btn btn-primary btn-hover-effect shadow-sm" @onclick="ShowModal">
+                <i class="bi bi-plus-lg me-2"></i> Programare Nouă
+            </button>
+        </div>
     </div>
 
     <AlertMessage Message="@successMessage" Type="AlertMessage.AlertType.Success" />
@@ -351,6 +357,133 @@
     </div>
 }
 
+@* Smart Scheduling Recommendations Modal *@
+@if (showSmartModal)
+{
+    <div class="modal-backdrop fade show" style="background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px);"></div>
+    <div class="modal fade show d-block animate-fade-in" tabindex="-1" role="dialog" aria-modal="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="modal-header border-bottom-0 p-4 bg-light">
+                    <div>
+                        <h5 class="modal-title fw-bold text-primary mb-1">
+                            <i class="bi bi-lightbulb-fill me-2 align-middle"></i>Recomandări Programare AI
+                        </h5>
+                        <p class="text-muted small mb-0">Completează preferințele pentru a primi cele mai bune intervale disponibile.</p>
+                    </div>
+                    <button type="button" class="btn-close shadow-none" @onclick="CloseSmartModal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <EditForm Model="smartModel" OnValidSubmit="GetSmartRecommendations">
+                        <div class="row g-3 mb-4">
+                             <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary small text-uppercase ls-1">Medic *</label>
+                                <InputSelect class="form-select" @bind-Value="smartModel.DoctorId">
+                                    <option value="">-- Alege medicul --</option>
+                                    @foreach (var d in filteredDoctors)
+                                    {
+                                        <option value="@d.Id">Dr. @d.FullName</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary small text-uppercase ls-1">Perioada Zilei</label>
+                                <InputSelect class="form-select" @bind-Value="smartModel.TimeOfDay">
+                                    <option value="morning">Dimineața (08:00 - 12:00)</option>
+                                    <option value="afternoon">După-amiaza (12:00 - 17:00)</option>
+                                    <option value="evening">Seara (17:00+)</option>
+                                </InputSelect>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary small text-uppercase ls-1">De la data</label>
+                                <InputDate class="form-control" @bind-Value="smartModel.PreferredDateStart" />
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary small text-uppercase ls-1">Până la data</label>
+                                 <InputDate class="form-control" @bind-Value="smartModel.PreferredDateEnd" />
+                            </div>
+
+                            <div class="col-12 mt-3">
+                                 <div class="form-check form-switch p-0 d-flex align-items-center">
+                                     <InputCheckbox class="form-check-input ms-0 me-2" id="isEmergency" @bind-Value="smartModel.IsEmergency" style="margin-top: 0; width: 2.5rem; height: 1.25rem; cursor: pointer;" />
+                                     <label class="form-check-label fw-medium ms-2 pt-1" for="isEmergency" style="cursor: pointer;">
+                                         Marchează ca urgență medicală (Durere acută)
+                                     </label>
+                                 </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-end mb-4">
+                            <button type="submit" class="btn btn-primary" disabled="@isSmartLoading">
+                                @if (isSmartLoading)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-search me-2"></i>
+                                }
+                                Caută Interval
+                            </button>
+                        </div>
+                    </EditForm>
+
+                    @if (isSmartLoading)
+                    {
+                        <div class="text-center py-5 border-top border-light">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Se încarcă...</span>
+                            </div>
+                            <p class="mt-2 text-muted fw-semibold">Sistemul AI caută cele mai bune variante...</p>
+                        </div>
+                    }
+                    else if (aiProposals != null)
+                    {
+                         if (aiProposals.Count == 0)
+                         {
+                             <div class="alert alert-warning d-flex align-items-center mt-3" role="alert">
+                                  <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
+                                  <div>Niciun slot nu s-a potrivit preferințelor tale. Încearcă să extinzi perioada sau să renunți la preferința de oră.</div>
+                             </div>
+                         }
+                         else
+                         {
+                             <h6 class="fw-semibold text-primary mb-3 mt-4 border-top border-light pt-4">Opțiuni Găsite:</h6>
+                             <div class="list-group shadow-sm">
+                                 @foreach (var slot in aiProposals)
+                                 {
+                                     <button type="button" class="list-group-item list-group-item-action p-3 mb-2 rounded border" @onclick="() => SelectSmartSlot(slot)">
+                                         <div class="d-flex justify-content-between align-items-center w-100">
+                                             <div>
+                                                 <h6 class="mb-1 text-dark fw-bold">
+                                                     <i class="bi bi-calendar-check text-primary me-2"></i>@slot.StartTime.ToString("dd MMMM yyyy")
+                                                 </h6>
+                                                 <div class="text-muted d-flex align-items-center mt-2">
+                                                     <span class="bg-light px-2 py-1 rounded me-3 border"><i class="bi bi-clock me-1"></i>@slot.StartTime.ToString("HH:mm") - @slot.EndTime.ToString("HH:mm")</span>
+                                                 </div>
+                                                 <small class="text-secondary d-block mt-2"><i class="bi bi-chat-quote-fill me-1"></i>"@slot.Reason"</small>
+                                             </div>
+                                             <div class="text-end">
+                                                 <div class="mb-2">
+                                                     <span class="badge @GetSmartBadgeClass(slot.Score) p-2 fs-6">Potrivire: @slot.Score%</span>
+                                                 </div>
+                                                 <span class="text-primary small fw-semibold">Alege <i class="bi bi-chevron-right"></i></span>
+                                             </div>
+                                         </div>
+                                     </button>
+                                 }
+                             </div>
+                         }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private List<AppointmentDto> appointments = new();
     private List<DoctorDto> doctors = new();
@@ -499,6 +632,113 @@
         paymentAppt = null;
     }
 
+    // A adăugat clasa pentru DTO-urile de Smart AI pentru moment
+    public class SchedulingResponseDto
+    {
+        [JsonPropertyName("proposals")]
+        public List<ProposedSlotDto> Proposals { get; set; } = new();
+    }
+
+    public class ProposedSlotDto
+    {
+        [JsonPropertyName("doctor_id")]
+        public string DoctorId { get; set; } = string.Empty;
+        [JsonPropertyName("start_time")]
+        public DateTime StartTime { get; set; }
+        [JsonPropertyName("end_time")]
+        public DateTime EndTime { get; set; }
+        [JsonPropertyName("score")]
+        public double Score { get; set; }
+        [JsonPropertyName("reason")]
+        public string Reason { get; set; } = string.Empty;
+    }
+
+    private bool showSmartModal = false;
+    private bool isSmartLoading = false;
+    private List<ProposedSlotDto>? aiProposals;
+    
+    // Model pentru forma Smart
+    private SmartRecommendationModel smartModel = new();
+    
+    public class SmartRecommendationModel
+    {
+        public string DoctorId { get; set; } = string.Empty;
+        public int ProcedureDurationMinutes { get; set; } = 30;
+        public DateTime? PreferredDateStart { get; set; } = DateTime.Today;
+        public DateTime? PreferredDateEnd { get; set; } = DateTime.Today.AddDays(7);
+        public string TimeOfDay { get; set; } = "morning";
+        public bool IsEmergency { get; set; } = false;
+    }
+
+    private void ShowSmartModal()
+    {
+        smartModel = new SmartRecommendationModel();
+        aiProposals = null;
+        showSmartModal = true;
+    }
+
+    private void CloseSmartModal()
+    {
+        showSmartModal = false;
+    }
+
+    private async Task GetSmartRecommendations()
+    {
+        if (string.IsNullOrEmpty(smartModel.DoctorId) || string.IsNullOrEmpty(currentUserId))
+        {
+            errorMessage = "Selectează un medic mai întâi.";
+            return;
+        }
+
+        isSmartLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            // Am corectat formatarea datelor din ToString("O") în ToString("yyyy-MM-dd") 
+            // pentru a evita caracterul '+' din fusul orar, care ne-encodat în URL rupea model binding-ul in .NET (Eroarea 400 Bad Request)
+            var query = $"?PatientId={currentUserId}&DoctorId={smartModel.DoctorId}" +
+                        $"&ProcedureDurationMinutes={smartModel.ProcedureDurationMinutes}" +
+                        $"&PreferredDateStart={smartModel.PreferredDateStart?.ToString("yyyy-MM-dd")}" +
+                        $"&PreferredDateEnd={smartModel.PreferredDateEnd?.ToString("yyyy-MM-dd")}" +
+                        $"&TimeOfDay={smartModel.TimeOfDay}" +
+                        $"&IsEmergency={smartModel.IsEmergency}";
+
+            var response = await Http.GetFromJsonAsync<SchedulingResponseDto>($"api/appointments/recommend{query}");
+            
+            if (response != null && response.Proposals.Any())
+            {
+                aiProposals = response.Proposals;
+            }
+            else
+            {
+                errorMessage = "Nu s-au găsit slot-uri potrivite conform preferințelor tale.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Eroare la generarea recomandărilor: " + ex.Message;
+        }
+        finally
+        {
+            isSmartLoading = false;
+        }
+    }
+
+    private void SelectSmartSlot(ProposedSlotDto slot)
+    {
+        // Pre-populăm modal-ul de "Programare Nouă" cu slot-ul ales
+        newAppt = new NewAppointmentModel
+        {
+            DentistId = slot.DoctorId,
+            Date = slot.StartTime.Date,
+            Hour = slot.StartTime.Hour
+        };
+        
+        CloseSmartModal();
+        ShowModal();
+    }
+
     private async Task SaveAppointment()
     {
         isSaving = true;
@@ -585,6 +825,13 @@
              }
         }
     }
+
+    private string GetSmartBadgeClass(double score) => score switch
+    {
+        >= 80 => "bg-success",
+        >= 50 => "bg-warning text-dark",
+        _ => "bg-danger"
+    };
 
     public class AppointmentDto
     {
