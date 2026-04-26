@@ -67,7 +67,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.MapControllers(); // <-- LINIE NOUA: Activează rutele din controllere
+app.MapControllers(); 
 
 // Endpoint-uri built-in pentru Identity
 app.MapGroup("/api/auth").MapIdentityApi<ApplicationUser>();

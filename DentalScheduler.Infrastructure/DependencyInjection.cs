@@ -38,6 +38,12 @@ public static class DependencyInjection
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IPaymentService, StripePaymentService>();
 
+        services.AddHttpClient<ISmartSchedulingService, SmartSchedulingService>(client =>
+        {
+            var aiServiceUrl = configuration["AIService:BaseUrl"] ?? "http://localhost:8000";
+            client.BaseAddress = new Uri(aiServiceUrl);
+        });
+
         return services;
     }
 }

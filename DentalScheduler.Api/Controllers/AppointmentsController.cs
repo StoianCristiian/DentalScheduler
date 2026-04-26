@@ -1,6 +1,8 @@
 ﻿using DentalScheduler.Application.Appointments.Commands.CreateAppointment;
 using DentalScheduler.Application.Appointments.Commands.UpdateAppointmentStatus;
 using DentalScheduler.Application.Appointments.Queries.GetAppointments;
+using DentalScheduler.Application.Appointments.Queries.GetScheduleRecommendations;
+using DentalScheduler.Application.DTOs.AI;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -53,6 +55,17 @@ public class AppointmentsController : ControllerBase
             Cost = request.Cost
         });
 
-        return success ? NoContent() : NotFound();
+        if (!success)
+            return BadRequest("Failed to update status.");
+
+        return NoContent();
+    }
+
+    // GET api/appointments/recommend
+    [HttpGet("recommend")]
+    public async Task<ActionResult<SchedulingResponseDto>> GetRecommendations([FromQuery] GetScheduleRecommendationsQuery query)
+    {
+        var response = await _mediator.Send(query);
+        return Ok(response);
     }
 }
