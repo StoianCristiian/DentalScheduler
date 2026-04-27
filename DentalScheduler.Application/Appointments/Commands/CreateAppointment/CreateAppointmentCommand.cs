@@ -46,6 +46,10 @@ public class CreateAppointmentCommandHandler : IRequestHandler<CreateAppointment
 
         var appointmentId = Guid.NewGuid();
         
+        // Nu forța conversia la UTC dacă front-end-ul așteaptă formatul nativ trimis
+        var startAtUtc = request.StartAt;
+        var endAtUtc = request.EndAt;
+        
         // Creează PaymentIntent pe Stripe DOAR dacă avem un cost valid
         string? paymentIntentId = null;
         string? clientSecret = null;
@@ -77,8 +81,8 @@ public class CreateAppointmentCommandHandler : IRequestHandler<CreateAppointment
             Id = appointmentId,
             PatientId = request.PatientId,
             DentistId = request.DentistId,
-            StartAt = request.StartAt,
-            EndAt = request.EndAt,
+            StartAt = startAtUtc,
+            EndAt = endAtUtc,
             Notes = request.Notes,
             TreatmentType = request.TreatmentType,
             Cost = request.Cost > 0 ? request.Cost : null, // Salvăm costul doar dacă e setat
