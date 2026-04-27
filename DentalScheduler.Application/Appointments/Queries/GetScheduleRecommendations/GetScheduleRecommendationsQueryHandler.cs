@@ -23,8 +23,8 @@ public class GetScheduleRecommendationsQueryHandler : IRequestHandler<GetSchedul
 
     public async Task<SchedulingResponseDto> Handle(GetScheduleRecommendationsQuery request, CancellationToken cancellationToken)
     {
-        // 1. Determina fereastra de analiza (ex: urmatoarele 14 zile daca nu se specifica)
-        var startDate = request.PreferredDateStart ?? DateTime.UtcNow.Date;
+        // 1. Determina fereastra de analiza
+        var startDate = request.PreferredDateStart ?? DateTime.Now.Date; // Time local per server pt a evite de-sync cu datele date de UI 
         var endDate = request.PreferredDateEnd ?? startDate.AddDays(14);
 
         if (endDate < startDate)
@@ -32,25 +32,40 @@ public class GetScheduleRecommendationsQueryHandler : IRequestHandler<GetSchedul
             endDate = startDate.AddDays(14);
         }
 
-        // --- CORECGERE: Conversie la UTC ---
-        // Asigură-te că datele trimise către AI și aduse din BD sunt comparabile ca fus orar.
-        startDate = DateTime.SpecifyKind(startDate, DateTimeKind.Utc);
-        endDate = DateTime.SpecifyKind(endDate, DateTimeKind.Utc).AddDays(1).AddTicks(-1); // Până la sfârșitul zilei endDate
+        var queryStart = startDate;
+        var queryEnd = endDate.AddDays(1).AddTicks(-1);
 
         // 2. Extrage programarile existente din baza de date pentru acel doctor in acea perioada
         var existingAppointments = await _context.Appointments
             .Where(a => a.DentistId == request.DoctorId &&
-                        a.StartAt >= startDate &&
-                        a.StartAt <= endDate &&
+                        a.StartAt >= queryStart &&
+                        a.StartAt <= queryEnd &&
                         a.Status != Domain.Enums.AppointmentStatus.Cancelled &&
                         a.Status != Domain.Enums.AppointmentStatus.Rejected)
             .ToListAsync(cancellationToken);
 
-        var existingApptDtos = existingAppointments.Select(a => new AppointmentDetailsDto
-        {
-            Id = a.Id.ToString(),
-            TimeWindow = new TimeWindowDto { StartTime = DateTime.SpecifyKind(a.StartAt, DateTimeKind.Utc), EndTime = DateTime.SpecifyKind(a.EndAt, DateTimeKind.Utc) },
-            Complexity = 2 // Poate fi modelat pe baza TreatmentType
+        var existingApptDtos = existingAppointments.Select(a => {
+            // Fortam normalizarea orei la timpu vizual din fata ecranului tau local.
+            // Daca in db e 05:00 Unspecified dar in UI era 08:00, e fixat catre local time
+            var s = a.StartAt;
+            var e = a.EndAt;
+            
+            // Fix for EndAt being 0001-01-01 in the database
+            if (e.Year <= 1)
+            {
+                e = s.AddMinutes(30);
+            }
+
+            return new AppointmentDetailsDto
+            {
+                Id = a.Id.ToString(),
+                TimeWindow = new TimeWindowDto 
+                { 
+                    StartTime = s, 
+                    EndTime = e 
+                },
+                Complexity = 2
+            };
         }).ToList();
 
         // 3. Simuleaza disponibilitatea doctorului (Luni -> Vineri, 08:00 - 16:00)
@@ -59,20 +74,17 @@ public class GetScheduleRecommendationsQueryHandler : IRequestHandler<GetSchedul
         {
             if (date.DayOfWeek != DayOfWeek.Saturday && date.DayOfWeek != DayOfWeek.Sunday)
             {
-                // IMPORTANT: Verifică ca ora curentă să nu fi trecut pentru ziua de azi.
-                var availStart = DateTime.SpecifyKind(date.AddHours(8), DateTimeKind.Utc);
-                var availEnd = DateTime.SpecifyKind(date.AddHours(16), DateTimeKind.Utc);
+                var availStart = date.AddHours(8); // Exact 08:00 PM in ziua testata
+                var availEnd = date.AddHours(16); // Exact 16:00 PM
                 
-                // Dacă verificăm disponibilitatea pentru ziua curentă, ajustăm ora de start la ora curentă + 1 oră buffer
-                if (date.Date == DateTime.UtcNow.Date && DateTime.UtcNow.Hour >= 8)
+                // Dacă verificăm disponibilitatea pentru ziua curentă, ajustăm ora
+                if (date.Date == DateTime.Now.Date && DateTime.Now.Hour >= 8)
                 {
-                    availStart = DateTime.UtcNow.AddHours(1); // Nu propune programări în trecut, lasă minim 1 ora
-                    // Ajustăm la un multiplu de 15 minute
+                    availStart = DateTime.Now.AddHours(1); 
                     var minutesRound = (availStart.Minute / 15 + 1) * 15;
                     availStart = availStart.Date.AddHours(availStart.Hour).AddMinutes(minutesRound);
                 }
 
-                // Adaugă fereastra doar dacă e mai mare strict validă
                 if (availStart < availEnd)
                 {
                     doctorAvailabilities.Add(new TimeWindowDto

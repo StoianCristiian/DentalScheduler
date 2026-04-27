@@ -62,23 +62,45 @@ def recommend_schedule(request: SchedulingRequest):
     
     proposed_slots = []
     duration = timedelta(minutes=request.procedure_duration_minutes)
-    buffer = timedelta(minutes=10) # 10 minute buffer intre programari
-    step = timedelta(minutes=15) # iteram in pasi de 15 minute
+    buffer = timedelta(minutes=0) # Setam buffer-ul la 0 pentru a permite programari consecutive
+    step = timedelta(minutes=30) # iteram in pasi de 30 minute
 
     # Functie helpers pentru suprapuneri
     def is_overlapping(start: datetime, end: datetime):
         for appt in request.existing_appointments:
-            appt_start = appt.time_window.start_time
-            appt_end = appt.time_window.end_time
+            appt_start = appt.time_window.start_time.replace(tzinfo=None)
+            appt_end = appt.time_window.end_time.replace(tzinfo=None)
+            start_naive = start.replace(tzinfo=None)
+            end_naive = end.replace(tzinfo=None)
+            
+            # Print for debug
+            # print(f"Checking overlap: Slot {start_naive}-{end_naive} vs Appt {appt_start}-{appt_end}")
+            
             # Daca exista orice suprapunere (tinand cont de capete)
-            if start < (appt_end + buffer) and end > (appt_start - buffer):
+            # O suprapunere exista daca si numai daca:
+            # - Noul slot incepe STRICT INAINTE sa se termine programarea
+            # - Noul slot se termina STRICT DUPA ce a inceput programarea
+            if start_naive < appt_end and end_naive > appt_start:
                 return True
         return False
+
+    # Debug: log appointments to console to verify what Python receives
+    print("EXISTING APPOINTMENTS RECEIVED:")
+    for a in request.existing_appointments:
+        print(f"ID: {a.id}, Start: {a.time_window.start_time}, End: {a.time_window.end_time}")
 
     for avail in request.doctor_availability:
         current_time = avail.start_time
         
-        while current_time + duration <= avail.end_time:
+        # Asiguram inceperea la un interval de 0 sau 30 de minute
+        if current_time.minute not in (0, 30):
+            if current_time.minute < 30:
+                current_time = current_time.replace(minute=30, second=0, microsecond=0)
+            else:
+                current_time = current_time + timedelta(hours=1)
+                current_time = current_time.replace(minute=0, second=0, microsecond=0)
+        
+        while current_time + duration <= avail.end_time: # type: ignore
             slot_start = current_time
             slot_end = current_time + duration
             
