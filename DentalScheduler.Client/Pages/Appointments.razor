@@ -137,356 +137,301 @@
 </div>
 
 @* Modal Programare Nouă *@
-@if (showModal)
-{
-    @* Use a backdrop div *@
-    <div class="modal-backdrop fade show" style="background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px);"></div>
-    <div class="modal fade show d-block animate-fade-in" tabindex="-1" role="dialog" aria-modal="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-                <div class="modal-header border-bottom-0 p-4 bg-light">
-                    <div>
-                        <h5 class="modal-title fw-bold text-primary mb-1">
-                            <i class="bi bi-calendar-plus-fill me-2"></i>Programare Nouă
-                        </h5>
-                        <p class="text-muted small mb-0">Completează detaliile pentru a solicita o programare.</p>
-                    </div>
-                    <button type="button" class="btn-close shadow-none" @onclick="CloseModal"></button>
-                </div>
-                <div class="modal-body p-4 pt-2">
-                    <EditForm Model="@newAppt" OnValidSubmit="SaveAppointment">
-                        <DataAnnotationsValidator />
-                        
-                        <div class="alert alert-light border-start border-4 border-info shadow-sm mb-4">
-                            <i class="bi bi-info-circle-fill text-info me-2"></i>
-                            Programarea va trebui confirmată de către medic.
-                        </div>
-
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <label class="form-label fw-semibold text-secondary small text-uppercase ls-1">Medic</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-person-badge"></i></span>
-                                    <InputSelect class="form-select border-start-0 ps-0" @bind-Value="newAppt.DentistId">
-                                        <option value="">-- Alege medicul --</option>
-                                        @foreach (var d in filteredDoctors)
-                                        {
-                                            <option value="@d.Id">Dr. @d.FullName</option>
-                                        }
-                                    </InputSelect>
-                                </div>
-                                <ValidationMessage For="@(() => newAppt.DentistId)" class="text-danger small mt-1" />
-                            </div>
-
-                            <div class="col-12">
-                                <label class="form-label fw-semibold text-secondary small text-uppercase ls-1">Tip Tratament</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-bandaid"></i></span>
-                                    <InputSelect class="form-select border-start-0 ps-0" @bind-Value="newAppt.TreatmentType">
-                                        <option value="">-- Alege tratamentul --</option>
-                                        <option value="Control periodic">Control periodic</option>
-                                        <option value="Detartraj">Detartraj</option>
-                                        <option value="Obturaţie (Plombă)">Obturaţie (Plombă)</option>
-                                        <option value="Extracţie">Extracţie</option>
-                                        <option value="Implant">Implant</option>
-                                        <option value="Albire dentară">Albire dentară</option>
-                                        <option value="Consultaţie">Consultaţie</option>
-                                    </InputSelect>
-                                </div>
-                                <ValidationMessage For="@(() => newAppt.TreatmentType)" class="text-danger small mt-1" />
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary small text-uppercase ls-1">Data</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-calendar"></i></span>
-                                    <InputDate class="form-control border-start-0 ps-0" @bind-Value="newAppt.Date" min="@DateTime.Today.ToString("yyyy-MM-dd")" />
-                                </div>
-                                <ValidationMessage For="@(() => newAppt.Date)" class="text-danger small mt-1" />
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary small text-uppercase ls-1">Ora</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-clock"></i></span>
-                                    <InputSelect class="form-select border-start-0 ps-0" @bind-Value="newAppt.Hour">
-                                        @for (int h = 8; h <= 17; h++)
-                                        {
-                                            var hour = h;
-                                            <option value="@hour">@hour.ToString("D2"):00</option>
-                                        }
-                                    </InputSelect>
-                                </div>
-                                <ValidationMessage For="@(() => newAppt.Hour)" class="text-danger small mt-1" />
-                            </div>
-
-                            <div class="col-12">
-                                <label class="form-label fw-semibold text-secondary small text-uppercase ls-1">Note (opțional)</label>
-                                <InputTextArea class="form-control" rows="3" @bind-Value="newAppt.Notes" placeholder="Adaugă detalii suplimentare pentru medic..." />
-                                <ValidationMessage For="@(() => newAppt.Notes)" class="text-danger small mt-1" />
-                            </div>
-                        </div>
-
-                        <div class="d-flex justify-content-end gap-2 mt-4 pt-2 border-top">
-                            <button type="button" class="btn btn-light px-4 fw-medium" @onclick="CloseModal">Anulează</button>
-                            <SubmitButton IsLoading="@isSaving" LoadingText="Se trimite..." Class="w-auto px-4 shadow-sm">
-                                <i class="bi bi-send me-2"></i>Trimite Cererea
-                            </SubmitButton>
-                        </div>
-                    </EditForm>
-                </div>
+<MudOverlay @bind-Visible="showModal" DarkBackground="true" AutoClose="false" ZIndex="9999">
+    <MudPaper Class="pa-6 rounded-xl animate-fade-in" Width="800px" MaxWidth="95vw" Elevation="8">
+        <div class="d-flex justify-space-between align-center mb-2">
+            <div>
+                <MudText Typo="Typo.h5" Color="Color.Primary" Class="fw-bold d-flex align-center">
+                    <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Class="me-2" /> Programare Nouă
+                </MudText>
+                <MudText Typo="Typo.body2" Class="text-muted">Completează detaliile pentru a solicita o programare.</MudText>
             </div>
+            <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="CloseModal" Color="Color.Default" Size="Size.Small" />
         </div>
-    </div>
-}
+
+        <EditForm Model="@newAppt" OnValidSubmit="SaveAppointment">
+            <DataAnnotationsValidator />
+            
+            <MudAlert Severity="Severity.Info" Class="my-4">
+                Programarea va trebui confirmată de către medic.
+            </MudAlert>
+
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudSelect T="string" @bind-Value="newAppt.DentistId" Label="Medic" Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter">
+                        <MudSelectItem T="string" Value="@("")">-- Alege medicul --</MudSelectItem>
+                        @foreach (var d in filteredDoctors)
+                        {
+                            <MudSelectItem T="string" Value="@d.Id">Dr. @d.FullName</MudSelectItem>
+                        }
+                    </MudSelect>
+                    <ValidationMessage For="@(() => newAppt.DentistId)" class="text-danger small mt-1" />
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudSelect T="string" @bind-Value="newAppt.TreatmentType" Label="Tip Tratament" Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter">
+                        <MudSelectItem T="string" Value="@("")">-- Alege tratamentul --</MudSelectItem>
+                        <MudSelectItem T="string" Value="@("Control periodic")">Control periodic</MudSelectItem>
+                        <MudSelectItem T="string" Value="@("Detartraj")">Detartraj</MudSelectItem>
+                        <MudSelectItem T="string" Value="@("Obturaţie (Plombă)")">Obturaţie (Plombă)</MudSelectItem>
+                        <MudSelectItem T="string" Value="@("Extracţie")">Extracție</MudSelectItem>
+                        <MudSelectItem T="string" Value="@("Implant")">Implant</MudSelectItem>
+                        <MudSelectItem T="string" Value="@("Albire dentară")">Albire dentară</MudSelectItem>
+                        <MudSelectItem T="string" Value="@("Consultaţie")">Consultaţie</MudSelectItem>
+                    </MudSelect>
+                    <ValidationMessage For="@(() => newAppt.TreatmentType)" class="text-danger small mt-1" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker @bind-Date="newApptDateFilter" Label="Data" MinDate="DateTime.Today" Variant="Variant.Outlined" DateFormat="dd/MM/yyyy" />
+                    <ValidationMessage For="@(() => newAppt.Date)" class="text-danger small mt-1" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="int" @bind-Value="newAppt.Hour" Label="Ora" Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter">
+                        @for (int h = 8; h <= 17; h++)
+                        {
+                            var hour = h;
+                            <MudSelectItem T="int" Value="@hour">@hour.ToString("D2"):00</MudSelectItem>
+                        }
+                    </MudSelect>
+                    <ValidationMessage For="@(() => newAppt.Hour)" class="text-danger small mt-1" />
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudTextField T="string" @bind-Value="newAppt.Notes" Label="Note (opțional)" Lines="3" Variant="Variant.Outlined" Placeholder="Adaugă detalii suplimentare pentru medic..." />
+                    <ValidationMessage For="@(() => newAppt.Notes)" class="text-danger small mt-1" />
+                </MudItem>
+            </MudGrid>
+
+            <div class="d-flex justify-end gap-3 mt-6">
+                <MudButton Variant="Variant.Text" OnClick="CloseModal" Class="fw-medium">Anulează</MudButton>
+                <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Disabled="@isSaving" Class="fw-bold px-6 shadow-sm rounded-pill">
+                    @if (isSaving)
+                    {
+                        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                        <span class="ms-2">Se trimite...</span>
+                    }
+                    else
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Send" Class="me-2" /> <span>Trimite Cererea</span>
+                    }
+                </MudButton>
+            </div>
+        </EditForm>
+    </MudPaper>
+</MudOverlay>
 
 @* Payment Modal - 3 Payment Options *@
-@if (paymentAppt != null)
-{
-    <div class="modal-backdrop fade show" style="background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px);"></div>
-    <div class="modal fade show d-block animate-fade-in" tabindex="-1" role="dialog" aria-modal="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-                <div class="modal-header border-bottom-0 p-4 bg-light">
-                    <div>
-                        <h5 class="modal-title fw-bold text-primary mb-1">
-                            <i class="bi bi-credit-card me-2"></i>Confirmare Plată
-                        </h5>
-                        <p class="text-muted small mb-0">Alege metoda de plată pentru programare.</p>
-                    </div>
-                    <button type="button" class="btn-close shadow-none" @onclick="ClosePaymentModal"></button>
+<MudOverlay Visible="@(paymentAppt != null)" DarkBackground="true" AutoClose="false" ZIndex="9999">
+    @if (paymentAppt != null)
+    {
+        <MudPaper Class="pa-6 rounded-xl animate-fade-in" Width="500px" MaxWidth="95vw" Elevation="8">
+            <div class="d-flex justify-space-between align-center mb-2">
+                <div>
+                    <MudText Typo="Typo.h5" Color="Color.Primary" Class="fw-bold d-flex align-center">
+                        <MudIcon Icon="@Icons.Material.Filled.CreditCard" Class="me-2" /> Confirmare Plată
+                    </MudText>
+                    <MudText Typo="Typo.body2" Class="text-muted">Alege metoda de plată pentru programare.</MudText>
                 </div>
-                <div class="modal-body p-4">
-                    <div class="mb-4 p-3 bg-light rounded-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <small class="text-muted text-uppercase fw-bold ls-1">Pacient</small>
-                                <p class="mb-0 fw-semibold">@paymentAppt.DentistName</p>
-                            </div>
-                            <div class="text-end">
-                                <small class="text-muted text-uppercase fw-bold ls-1">Cost</small>
-                                <p class="mb-0 fw-bold text-success fs-5">@paymentAppt.Cost?.ToString("N0") RON</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <p class="text-muted small mb-3">Selectează una din următoarele opțiuni:</p>
-
-                    <div class="d-grid gap-2">
-                        @* Option 1: Stripe Payment *@
-                        <button type="button" 
-                                class="@("btn btn-outline-primary btn-lg p-3 text-start shadow-sm hover-lift")"
-                                @onclick="@(async () => await ProcessPayment(paymentAppt.Id, "stripe"))"
-                                disabled="@(processingId != null)">
-                            <div class="d-flex align-items-center">
-                                <div class="me-3">
-                                    <i class="bi bi-credit-card fs-4 text-primary"></i>
-                                </div>
-                                <div class="flex-grow-1">
-                                    <strong class="d-block">Plată cu Stripe</strong>
-                                    <small class="text-muted">Card de credit/debit online</small>
-                                </div>
-                                @if (processingId == paymentAppt.Id)
-                                {
-                                    <span class="spinner-border spinner-border-sm text-primary"></span>
-                                }
-                                else
-                                {
-                                    <i class="bi bi-chevron-right text-muted"></i>
-                                }
-                            </div>
-                        </button>
-
-                        @* Option 2: Cash/POS Payment *@
-                        <button type="button" 
-                                class="@("btn btn-outline-success btn-lg p-3 text-start shadow-sm hover-lift")"
-                                @onclick="@(async () => await ProcessPayment(paymentAppt.Id, "cash"))"
-                                disabled="@(processingId != null)">
-                            <div class="d-flex align-items-center">
-                                <div class="me-3">
-                                    <i class="bi bi-cash-coin fs-4 text-success"></i>
-                                </div>
-                                <div class="flex-grow-1">
-                                    <strong class="d-block">Plată la Cabinet</strong>
-                                    <small class="text-muted">Cash sau POS la sosire</small>
-                                </div>
-                                @if (processingId == paymentAppt.Id)
-                                {
-                                    <span class="spinner-border spinner-border-sm text-success"></span>
-                                }
-                                else
-                                {
-                                    <i class="bi bi-chevron-right text-muted"></i>
-                                }
-                            </div>
-                        </button>
-
-                        @* Option 3: Reject *@
-                        <button type="button" 
-                                class="@("btn btn-outline-danger btn-lg p-3 text-start shadow-sm hover-lift")"
-                                @onclick="@(async () => await ProcessPayment(paymentAppt.Id, "reject"))"
-                                disabled="@(processingId != null)">
-                            <div class="d-flex align-items-center">
-                                <div class="me-3">
-                                    <i class="bi bi-x-circle fs-4 text-danger"></i>
-                                </div>
-                                <div class="flex-grow-1">
-                                    <strong class="d-block">Respinge Programarea</strong>
-                                    <small class="text-muted">Nu pot ajunge la programare</small>
-                                </div>
-                                @if (processingId == paymentAppt.Id)
-                                {
-                                    <span class="spinner-border spinner-border-sm text-danger"></span>
-                                }
-                                else
-                                {
-                                    <i class="bi bi-chevron-right text-muted"></i>
-                                }
-                            </div>
-                        </button>
-                    </div>
-
-                    <div class="alert alert-info border-start border-4 mt-4 mb-0">
-                        <i class="bi bi-info-circle-fill me-2"></i>
-                        <small>
-                            <strong>Atenție:</strong> Confirmarea prezenței te angajează să vii la programare.
-                            În caz de imposibilitate, anulează cu cel puțin 24h înainte.
-                        </small>
-                    </div>
-                </div>
+                <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="ClosePaymentModal" Color="Color.Default" Size="Size.Small" />
             </div>
-        </div>
-    </div>
-}
+
+            <MudPaper Elevation="0" Class="pa-4 my-4 bg-light rounded-lg d-flex justify-space-between align-center">
+                <div>
+                    <MudText Typo="Typo.caption" Class="text-muted text-uppercase fw-bold ls-1">Pacient</MudText>
+                    <MudText Typo="Typo.body1" Class="fw-semibold">@paymentAppt.DentistName</MudText>
+                </div>
+                <div class="text-end">
+                    <MudText Typo="Typo.caption" Class="text-muted text-uppercase fw-bold ls-1">Cost</MudText>
+                    <MudText Typo="Typo.h6" Color="Color.Success" Class="fw-bold">@paymentAppt.Cost?.ToString("N0") RON</MudText>
+                </div>
+            </MudPaper>
+
+            <MudText Typo="Typo.body2" Class="text-muted mb-4">Selectează una din următoarele opțiuni:</MudText>
+
+            <div class="d-flex flex-column gap-3 mb-6">
+                @* Option 1: Stripe Payment *@
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Large" Class="py-3 px-4 d-flex justify-start text-start" Style="text-transform: none; border-width: 2px;" OnClick="@(async () => await ProcessPayment(paymentAppt.Id, "stripe"))" Disabled="@(processingId != null)">
+                    <div class="d-flex align-center w-100">
+                        <div class="me-4"><MudIcon Icon="@Icons.Material.Filled.CreditCard" Size="Size.Large" /></div>
+                        <div class="flex-grow-1">
+                            <span class="d-block fw-bold fs-6">Plată cu Stripe</span>
+                            <span class="text-muted small">Card de credit/debit online</span>
+                        </div>
+                        @if (processingId == paymentAppt.Id) { <MudProgressCircular Size="Size.Small" Indeterminate="true" /> }
+                        else { <MudIcon Icon="@Icons.Material.Filled.ChevronRight" /> }
+                    </div>
+                </MudButton>
+
+                @* Option 2: Cash/POS Payment *@
+                <MudButton Variant="Variant.Outlined" Color="Color.Success" Size="Size.Large" Class="py-3 px-4 d-flex justify-start text-start" Style="text-transform: none; border-width: 2px;" OnClick="@(async () => await ProcessPayment(paymentAppt.Id, "cash"))" Disabled="@(processingId != null)">
+                    <div class="d-flex align-center w-100">
+                        <div class="me-4"><MudIcon Icon="@Icons.Material.Filled.Payments" Size="Size.Large" /></div>
+                        <div class="flex-grow-1">
+                            <span class="d-block fw-bold fs-6">Plată la Cabinet</span>
+                            <span class="text-muted small">Cash sau POS la sosire</span>
+                        </div>
+                        @if (processingId == paymentAppt.Id) { <MudProgressCircular Size="Size.Small" Indeterminate="true" /> }
+                        else { <MudIcon Icon="@Icons.Material.Filled.ChevronRight" /> }
+                    </div>
+                </MudButton>
+
+                @* Option 3: Reject *@
+                <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Large" Class="py-3 px-4 d-flex justify-start text-start" Style="text-transform: none; border-width: 2px;" OnClick="@(async () => await ProcessPayment(paymentAppt.Id, "reject"))" Disabled="@(processingId != null)">
+                    <div class="d-flex align-center w-100">
+                        <div class="me-4"><MudIcon Icon="@Icons.Material.Filled.Cancel" Size="Size.Large" /></div>
+                        <div class="flex-grow-1">
+                            <span class="d-block fw-bold fs-6">Respinge Programarea</span>
+                            <span class="text-muted small">Nu pot ajunge la programare</span>
+                        </div>
+                        @if (processingId == paymentAppt.Id) { <MudProgressCircular Size="Size.Small" Indeterminate="true" /> }
+                        else { <MudIcon Icon="@Icons.Material.Filled.ChevronRight" /> }
+                    </div>
+                </MudButton>
+            </div>
+
+            <MudAlert Severity="Severity.Info" Class="mt-2 text-sm">
+                <strong>Atenție:</strong> Confirmarea prezenței te angajează să vii la programare. În caz de imposibilitate, anulează cu cel puțin 24h înainte.
+            </MudAlert>
+        </MudPaper>
+    }
+</MudOverlay>
 
 @* Smart Scheduling Recommendations Modal *@
-@if (showSmartModal)
-{
-    <div class="modal-backdrop fade show" style="background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px);"></div>
-    <div class="modal fade show d-block animate-fade-in" tabindex="-1" role="dialog" aria-modal="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-                <div class="modal-header border-bottom-0 p-4 bg-light">
-                    <div>
-                        <h5 class="modal-title fw-bold text-primary mb-1">
-                            <i class="bi bi-lightbulb-fill me-2 align-middle"></i>Recomandări Programare AI
-                        </h5>
-                        <p class="text-muted small mb-0">Completează preferințele pentru a primi cele mai bune intervale disponibile.</p>
-                    </div>
-                    <button type="button" class="btn-close shadow-none" @onclick="CloseSmartModal"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <EditForm Model="smartModel" OnValidSubmit="GetSmartRecommendations">
-                        <div class="row g-3 mb-4">
-                             <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary small text-uppercase ls-1">Medic *</label>
-                                <InputSelect class="form-select" @bind-Value="smartModel.DoctorId">
-                                    <option value="">-- Alege medicul --</option>
-                                    @foreach (var d in filteredDoctors)
-                                    {
-                                        <option value="@d.Id">Dr. @d.FullName</option>
-                                    }
-                                </InputSelect>
-                            </div>
-                            
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary small text-uppercase ls-1">Perioada Zilei</label>
-                                <InputSelect class="form-select" @bind-Value="smartModel.TimeOfDay">
-                                    <option value="morning">Dimineața (08:00 - 12:00)</option>
-                                    <option value="afternoon">După-amiaza (12:00 - 17:00)</option>
-                                    <option value="evening">Seara (17:00+)</option>
-                                </InputSelect>
-                            </div>
-                            
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary small text-uppercase ls-1">De la data</label>
-                                <InputDate class="form-control" @bind-Value="smartModel.PreferredDateStart" />
-                            </div>
-                            
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary small text-uppercase ls-1">Până la data</label>
-                                 <InputDate class="form-control" @bind-Value="smartModel.PreferredDateEnd" />
-                            </div>
+<MudOverlay @bind-Visible="showSmartModal" DarkBackground="true" AutoClose="false" ZIndex="9999">
+    <MudPaper Class="pa-6 rounded-xl animate-fade-in" Width="900px" MaxWidth="95vw" MaxHeight="90vh" Style="overflow-y: auto;" Elevation="8">
+        <div class="d-flex justify-space-between align-center mb-2">
+            <div>
+                <MudText Typo="Typo.h5" Color="Color.Primary" Class="fw-bold d-flex align-center">
+                    <MudIcon Icon="@Icons.Material.Filled.Lightbulb" Class="me-2" /> Recomandări Programare AI
+                </MudText>
+                <MudText Typo="Typo.body2" Class="text-muted">Completează preferințele pentru a primi cele mai bune intervale disponibile.</MudText>
+            </div>
+            <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="CloseSmartModal" Color="Color.Default" Size="Size.Small" />
+        </div>
 
-                            <div class="col-12 mt-3">
-                                 <div class="form-check form-switch p-0 d-flex align-items-center">
-                                     <InputCheckbox class="form-check-input ms-0 me-2" id="isEmergency" @bind-Value="smartModel.IsEmergency" style="margin-top: 0; width: 2.5rem; height: 1.25rem; cursor: pointer;" />
-                                     <label class="form-check-label fw-medium ms-2 pt-1" for="isEmergency" style="cursor: pointer;">
-                                         Marchează ca urgență medicală (Durere acută)
-                                     </label>
-                                 </div>
-                            </div>
-                        </div>
-                        
-                        <div class="d-flex justify-content-end mb-4">
-                            <button type="submit" class="btn btn-primary" disabled="@isSmartLoading">
-                                @if (isSmartLoading)
-                                {
-                                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                }
-                                else
-                                {
-                                    <i class="bi bi-search me-2"></i>
-                                }
-                                Caută Interval
-                            </button>
-                        </div>
-                    </EditForm>
+        <EditForm Model="smartModel" OnValidSubmit="GetSmartRecommendations">
+            <MudGrid Class="my-4">
+                <MudItem xs="12" md="6">
+                    <MudSelect T="string" @bind-Value="smartModel.DoctorId" Label="Medic *" Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter">
+                        <MudSelectItem T="string" Value="@("")">-- Alege medicul --</MudSelectItem>
+                        @foreach (var d in filteredDoctors)
+                        {
+                            <MudSelectItem T="string" Value="@d.Id">Dr. @d.FullName</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                
+                <MudItem xs="12" md="6">
+                    <MudSelect T="string" @bind-Value="smartModel.TimeOfDay" Label="Perioada Zilei" Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter">
+                        <MudSelectItem T="string" Value="@("morning")">Dimineața (08:00 - 12:00)</MudSelectItem>
+                        <MudSelectItem T="string" Value="@("afternoon")">După-amiaza (12:00 - 17:00)</MudSelectItem>
+                        <MudSelectItem T="string" Value="@("evening")">Seara (17:00+)</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                
+                <MudItem xs="12" md="6">
+                    <MudDatePicker @bind-Date="smartModelDateStart" Label="De la data" Variant="Variant.Outlined" DateFormat="dd/MM/yyyy" />
+                </MudItem>
+                
+                <MudItem xs="12" md="6">
+                    <MudDatePicker @bind-Date="smartModelDateEnd" Label="Până la data" Variant="Variant.Outlined" DateFormat="dd/MM/yyyy" />
+                </MudItem>
 
+                <MudItem xs="12">
+                    <MudSwitch @bind-Value="smartModel.IsEmergency" Color="Color.Error" Label="Marchează ca urgență medicală (Durere acută)" />
+                </MudItem>
+            </MudGrid>
+            
+            <div class="d-flex justify-end mb-6">
+                <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Disabled="@isSmartLoading" Class="rounded-pill px-6 fw-bold">
                     @if (isSmartLoading)
                     {
-                        <div class="text-center py-5 border-top border-light">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Se încarcă...</span>
-                            </div>
-                            <p class="mt-2 text-muted fw-semibold">Sistemul AI caută cele mai bune variante...</p>
-                        </div>
+                        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                        <span class="ms-2">Căutare...</span>
                     }
-                    else if (aiProposals != null)
+                    else
                     {
-                         if (aiProposals.Count == 0)
-                         {
-                             <div class="alert alert-warning d-flex align-items-center mt-3" role="alert">
-                                  <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
-                                  <div>Niciun slot nu s-a potrivit preferințelor tale. Încearcă să extinzi perioada sau să renunți la preferința de oră.</div>
-                             </div>
-                         }
-                         else
-                         {
-                             <h6 class="fw-semibold text-primary mb-3 mt-4 border-top border-light pt-4">Opțiuni Găsite:</h6>
-                             <div class="list-group shadow-sm">
-                                 @foreach (var slot in aiProposals)
-                                 {
-                                     <button type="button" class="list-group-item list-group-item-action p-3 mb-2 rounded border" @onclick="() => SelectSmartSlot(slot)">
-                                         <div class="d-flex justify-content-between align-items-center w-100">
-                                             <div>
-                                                 <h6 class="mb-1 text-dark fw-bold">
-                                                     <i class="bi bi-calendar-check text-primary me-2"></i>@slot.StartTime.ToString("dd MMMM yyyy")
-                                                 </h6>
-                                                 <div class="text-muted d-flex align-items-center mt-2">
-                                                     <span class="bg-light px-2 py-1 rounded me-3 border"><i class="bi bi-clock me-1"></i>@slot.StartTime.ToString("HH:mm") - @slot.EndTime.ToString("HH:mm")</span>
-                                                 </div>
-                                                 <small class="text-secondary d-block mt-2"><i class="bi bi-chat-quote-fill me-1"></i>"@slot.Reason"</small>
-                                             </div>
-                                             <div class="text-end">
-                                                 <div class="mb-2">
-                                                     <span class="badge @GetSmartBadgeClass(slot.Score) p-2 fs-6">Potrivire: @slot.Score%</span>
-                                                 </div>
-                                                 <span class="text-primary small fw-semibold">Alege <i class="bi bi-chevron-right"></i></span>
-                                             </div>
-                                         </div>
-                                     </button>
-                                 }
-                             </div>
-                         }
+                        <MudIcon Icon="@Icons.Material.Filled.Search" Class="me-2" /> <span>Caută Interval</span>
+                    }
+                </MudButton>
+            </div>
+        </EditForm>
+
+        @if (isSmartLoading)
+        {
+            <div class="text-center py-5 border-top">
+                <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" Class="mb-3" />
+                <MudText Typo="Typo.body1" Class="text-muted fw-semibold">Sistemul AI caută cele mai bune variante...</MudText>
+            </div>
+        }
+        else if (aiProposals != null)
+        {
+            if (aiProposals.Count == 0)
+            {
+                <MudAlert Severity="Severity.Warning" Class="mt-4">
+                    Niciun slot nu s-a potrivit preferințelor tale. Încearcă să extinzi perioada sau să renunți la preferința de oră.
+                </MudAlert>
+            }
+            else
+            {
+                <MudDivider Class="my-4" />
+                <MudText Typo="Typo.h6" Color="Color.Primary" Class="fw-semibold mb-4">Opțiuni Găsite:</MudText>
+                
+                <div class="d-flex flex-column gap-3">
+                    @foreach (var slot in aiProposals)
+                    {
+                        <MudPaper Elevation="2" Class="pa-4 rounded pointer hover-lift" Style="cursor:pointer;" @onclick="() => SelectSmartSlot(slot)">
+                            <MudGrid>
+                                <MudItem xs="12" sm="8">
+                                    <MudText Typo="Typo.subtitle1" Class="fw-bold d-flex align-center mb-1">
+                                        <MudIcon Icon="@Icons.Material.Filled.EventAvailable" Color="Color.Primary" Class="me-2" Size="Size.Small" /> @slot.StartTime.ToString("dd MMMM yyyy")
+                                    </MudText>
+                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.AccessTime" Class="mb-2">@slot.StartTime.ToString("HH:mm") - @slot.EndTime.ToString("HH:mm")</MudChip>
+                                    <MudText Typo="Typo.body2" Class="text-muted fst-italic">
+                                        <MudIcon Icon="@Icons.Material.Filled.FormatQuote" Size="Size.Small" Class="me-1" /> @slot.Reason
+                                    </MudText>
+                                </MudItem>
+                                <MudItem xs="12" sm="4" Class="d-flex flex-column align-end justify-center">
+                                    <MudChip T="string" Color="@GetSmartColor(slot.Score)" Size="Size.Medium" Class="fw-bold mb-2">Potrivire: @slot.Score%</MudChip>
+                                    <MudText Typo="Typo.caption" Color="Color.Primary" Class="fw-bold d-flex align-center">ALEGE <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" /></MudText>
+                                </MudItem>
+                            </MudGrid>
+                        </MudPaper>
                     }
                 </div>
-            </div>
-        </div>
-    </div>
-}
+            }
+        }
+    </MudPaper>
+</MudOverlay>
 
 @code {
+    private DateTime? newApptDateFilter
+    {
+        get => newAppt.Date == default ? null : newAppt.Date;
+        set => newAppt.Date = value ?? DateTime.Today;
+    }
+    
+    private DateTime? smartModelDateStart
+    {
+        get => smartModel.PreferredDateStart;
+        set => smartModel.PreferredDateStart = value;
+    }
+
+    private DateTime? smartModelDateEnd
+    {
+        get => smartModel.PreferredDateEnd;
+        set => smartModel.PreferredDateEnd = value;
+    }
+
+    private MudBlazor.Color GetSmartColor(double score) => score switch
+    {
+        >= 80 => MudBlazor.Color.Success,
+        >= 50 => MudBlazor.Color.Warning,
+        _ => MudBlazor.Color.Error
+    };
+
     private List<AppointmentDto> appointments = new();
     private List<DoctorDto> doctors = new();
     private List<DoctorDto> filteredDoctors = new();
@@ -507,6 +452,10 @@
         if (string.IsNullOrEmpty(relativeUrl)) return "";
         if (relativeUrl.StartsWith("http")) return relativeUrl;
         // Prefix with ApiBaseUrl if it's a relative path to the API, but AWS S3 URLs might lack this and be relative to bucket or API route if proxied
+        if (!relativeUrl.StartsWith("/"))
+        {
+            relativeUrl = "/" + relativeUrl;
+        }
         return $"{ApiBaseUrl}{relativeUrl}";
     }
 

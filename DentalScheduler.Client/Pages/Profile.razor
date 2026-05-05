@@ -8,144 +8,170 @@
 @inject HttpClient Http
 @inject ILocalStorageService LocalStorage
 @inject AuthenticationStateProvider AuthStateProvider
-@inject NavigationManager Navigation
 
 <PageTitle>Profilul Meu</PageTitle>
 
-<div class="container py-5 animate-fade-in">
-    <div class="row justify-content-center">
-        <div class="col-xl-9 col-lg-10">
-            
-            <div class="card border-0 shadow-lg rounded-4 overflow-hidden mb-5">
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8 animate-fade-in">
+    <MudGrid Justify="Justify.Center">
+        <MudItem xs="12" md="10" lg="9">
+            <MudPaper Elevation="6" Class="rounded-xl overflow-hidden mb-6">
                 <!-- Cover Photo Area -->
-                <div class="bg-primary position-relative" style="height: 160px; background: linear-gradient(135deg, #0d6efd 0%, #004385 100%);">
+                <MudPaper Square="true" Elevation="0" Color="Color.Primary" Class="position-relative" Style="height: 160px;">
                     <div class="position-absolute top-0 start-0 w-100 h-100 opacity-25" 
                          style="background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.1) 10px, rgba(255,255,255,0.1) 20px);"></div>
-                </div>
+                </MudPaper>
 
-                <div class="card-body px-4 px-md-5 pb-5">
-                    <div class="row">
+                <div class="px-6 px-md-10 pb-8">
+                    <MudGrid>
                         <!-- Left Side: Profile Card -->
-                        <div class="col-md-4 mb-4 mb-md-0 position-relative">
-                            <div class="text-center mt-n5">
-                                <div class="position-relative d-inline-block">
-                                    <!-- Avatar -->
-                                    <div class="rounded-circle border border-5 border-white shadow bg-white overflow-hidden d-flex align-items-center justify-content-center" 
-                                         style="width: 150px; height: 150px;">
-                                        @if (!string.IsNullOrEmpty(userProfile.ProfilePictureUrl))
-                                        {
-                                            <img src="@GetFullImageUrl(userProfile.ProfilePictureUrl)" alt="Profile" class="w-100 h-100 object-fit-cover" 
-                                                 onerror="this.onerror=null;this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2NjYyIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEwIi8+PHBhdGggZD0iTTUgMjFjMi00IDQtNiA3LTZzNSAyIDcgNiIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iNyIgcj0iNCIvPjwvc3ZnPg==';" />
-                                        }
-                                        else
-                                        {
-                                            <i class="bi bi-person-fill text-muted" style="font-size: 5rem;"></i>
-                                        }
+                        <MudItem xs="12" md="4" Class="position-relative">
+                            <div class="d-flex flex-column align-center mt-n12">
+                                <div class="position-relative">
+                                    @if (!string.IsNullOrEmpty(_userProfile.ProfilePictureUrl))
+                                    {
+                                        <MudAvatar Style="width: 150px; height: 150px; border: 5px solid white;" Elevation="4">
+                                            <MudImage Src="@GetFullImageUrl(_userProfile.ProfilePictureUrl)" ObjectFit="ObjectFit.Cover" Alt="Profile" Class="w-100 h-100" />
+                                        </MudAvatar>
+                                    }
+                                    else
+                                    {
+                                        <MudAvatar Color="Color.Surface" Style="width: 150px; height: 150px; border: 5px solid white;" Elevation="4">
+                                            <MudIcon Icon="@Icons.Material.Filled.Person" Style="font-size: 5rem;" Color="Color.Default" />
+                                        </MudAvatar>
+                                    }
+
+                                    <!-- Camera Upload Button -->
+                                    <div class="position-absolute bottom-0 end-0" style="transform: translate(-5px, -5px);">
+                                        <MudIconButton HtmlTag="label" 
+                                                       for="profilePicInput"
+                                                       Color="Color.Primary" 
+                                                       Variant="Variant.Filled" 
+                                                       Icon="@Icons.Material.Filled.CameraAlt" 
+                                                       Size="Size.Medium" 
+                                                       Style="border: 3px solid white; border-radius: 50%;" />
+                                        <InputFile id="profilePicInput" OnChange="UploadProfilePictureContext" hidden accept=".jpg,.jpeg,.png" />
                                     </div>
-                                    <!-- Camera Button -->
-                                    <label class="btn btn-primary rounded-circle position-absolute bottom-0 end-0 border border-3 border-white shadow-sm d-flex align-items-center justify-content-center btn-hover-scale" 
-                                           style="width: 42px; height: 42px; transform: translate(-5px, -5px);" 
-                                           title="Încarcă fotografie">
-                                        <i class="bi bi-camera-fill small"></i>
-                                        <InputFile OnChange="UploadProfilePicture" hidden accept=".jpg,.jpeg,.png" />
-                                    </label>
                                 </div>
                                 
-                                <h4 class="fw-bold mt-3 mb-1">@userProfile.FirstName @userProfile.LastName</h4>
-                                <div class="badge bg-light text-primary border border-primary-subtle rounded-pill px-3 py-1 mb-2">
-                                    @userProfile.Role
-                                </div>
-                                <div class="text-muted small">
-                                    <i class="bi bi-geo-alt me-1"></i>
-                                    @(string.IsNullOrWhiteSpace(userProfile.Address) ? "Adresă specificată" : userProfile.Address.Split(',')[0])
-                                </div>
+                                <MudText Typo="Typo.h5" Class="fw-bold mt-4">@_userProfile.FirstName @_userProfile.LastName</MudText>
+                                <MudChip T="string" Color="Color.Primary" Variant="Variant.Outlined" Class="mt-1 mb-3">@_userProfile.Role</MudChip>
+                                
+                                <MudText Typo="Typo.body2" Class="text-muted d-flex align-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.LocationOn" Size="Size.Small" Class="me-1" />
+                                    @(string.IsNullOrWhiteSpace(_userProfile.Address) ? "Adresă nespecificată" : _userProfile.Address.Split(',')[0])
+                                </MudText>
                             </div>
-                        </div>
+                        </MudItem>
 
                         <!-- Right Side: Edit Form -->
-                        <div class="col-md-8 ps-md-5 pt-3">
-                            <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
-                                <h5 class="mb-0 fw-bold text-dark">
-                                    <i class="bi bi-person-gear me-2 text-primary"></i>Setări Cont
-                                </h5>
+                        <MudItem xs="12" md="8" Class="ps-md-8 pt-6">
+                            <div class="d-flex align-center mb-6 pb-2" style="border-bottom: 1px solid #e0e0e0;">
+                                <MudIcon Icon="@Icons.Material.Filled.ManageAccounts" Color="Color.Primary" Size="Size.Medium" Class="me-3" />
+                                <MudText Typo="Typo.h5" Class="fw-bold">Setări Cont</MudText>
                             </div>
 
-                            <AlertMessage Message="@successMessage" Type="AlertMessage.AlertType.Success" />
-                            <AlertMessage Message="@errorMessage" Type="AlertMessage.AlertType.Danger" />
-
-                            @if (isLoading)
+                            @if (!string.IsNullOrEmpty(_successMessage))
                             {
-                                <div class="text-center py-4">
-                                    <div class="spinner-border text-primary spinner-border-sm" role="status"></div>
-                                    <span class="ms-2 text-muted fw-medium">Se încarcă datele...</span>
+                                <MudAlert Severity="Severity.Success" Class="mb-4">@_successMessage</MudAlert>
+                            }
+                            @if (!string.IsNullOrEmpty(_errorMessage))
+                            {
+                                <MudAlert Severity="Severity.Error" Class="mb-4">@_errorMessage</MudAlert>
+                            }
+
+                            @if (_isLoading)
+                            {
+                                <div class="d-flex justify-center align-center py-8">
+                                    <MudProgressCircular Color="Color.Primary" Indeterminate="true" Class="me-3" />
+                                    <MudText Typo="Typo.body1" Class="text-muted fw-medium">Se încarcă datele...</MudText>
                                 </div>
                             }
                             else
                             {
-                                <EditForm Model="@userProfile" OnValidSubmit="SaveProfile">
+                                <EditForm Model="@_userProfile" OnValidSubmit="SaveProfile">
                                     <DataAnnotationsValidator />
                                     
-                                    <div class="row g-3">
-                                        <div class="col-md-6">
-                                            <div class="form-floating">
-                                                <InputText id="firstName" class="form-control" @bind-Value="userProfile.FirstName" placeholder="Prenume" />
-                                                <label for="firstName" class="text-muted">Prenume</label>
-                                            </div>
-                                            <ValidationMessage For="@(() => userProfile.FirstName)" />
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="form-floating">
-                                                <InputText id="lastName" class="form-control" @bind-Value="userProfile.LastName" placeholder="Nume" />
-                                                <label for="lastName" class="text-muted">Nume</label>
-                                            </div>
-                                            <ValidationMessage For="@(() => userProfile.LastName)" />
-                                        </div>
+                                    <MudGrid>
+                                        <MudItem xs="12" sm="6">
+                                            <MudTextField @bind-Value="_userProfile.FirstName" 
+                                                          Label="Prenume" 
+                                                          Variant="Variant.Outlined" 
+                                                          Margin="Margin.Normal"
+                                                          For="@(() => _userProfile.FirstName)" />
+                                        </MudItem>
+                                        
+                                        <MudItem xs="12" sm="6">
+                                            <MudTextField @bind-Value="_userProfile.LastName" 
+                                                          Label="Nume" 
+                                                          Variant="Variant.Outlined" 
+                                                          Margin="Margin.Normal"
+                                                          For="@(() => _userProfile.LastName)" />
+                                        </MudItem>
 
-                                        <div class="col-12">
-                                            <div class="form-floating">
-                                                <input type="email" id="email" class="form-control bg-light" value="@userProfile.Email" disabled readonly placeholder="name@example.com" />
-                                                <label for="email" class="text-muted">Adresă de Email <i class="bi bi-lock-fill small ms-1"></i></label>
-                                            </div>
-                                        </div>
+                                        <MudItem xs="12">
+                                            <MudTextField Value="@_userProfile.Email" 
+                                                          Label="Adresă de Email" 
+                                                          Variant="Variant.Outlined" 
+                                                          Margin="Margin.Dense"
+                                                          ReadOnly="true"
+                                                          Disabled="true"
+                                                          Adornment="Adornment.End"
+                                                          AdornmentIcon="@Icons.Material.Filled.Lock" />
+                                        </MudItem>
 
-                                        <div class="col-12">
-                                            <div class="form-floating">
-                                                <InputText id="phone" class="form-control" @bind-Value="userProfile.PhoneNumber" placeholder="07xx" />
-                                                <label for="phone" class="text-muted">Număr Telefon</label>
-                                            </div>
-                                            <ValidationMessage For="@(() => userProfile.PhoneNumber)" />
-                                        </div>
+                                        <MudItem xs="12">
+                                            <MudTextField @bind-Value="_userProfile.PhoneNumber" 
+                                                          Label="Număr Telefon" 
+                                                          Variant="Variant.Outlined" 
+                                                          Margin="Margin.Normal"
+                                                          Placeholder="07xx"
+                                                          For="@(() => _userProfile.PhoneNumber)" />
+                                        </MudItem>
 
-                                        <div class="col-12">
-                                            <div class="form-floating">
-                                                <InputTextArea id="address" class="form-control" @bind-Value="userProfile.Address" placeholder="Adresa" style="height: 100px" />
-                                                <label for="address" class="text-muted">Adresă completă</label>
-                                            </div>
-                                            <ValidationMessage For="@(() => userProfile.Address)" />
-                                        </div>
+                                        <MudItem xs="12">
+                                            <MudTextField @bind-Value="_userProfile.Address" 
+                                                          Label="Adresă completă" 
+                                                          Variant="Variant.Outlined" 
+                                                          Margin="Margin.Normal"
+                                                          Lines="3"
+                                                          For="@(() => _userProfile.Address)" />
+                                        </MudItem>
 
-                                        <div class="col-12 mt-4 text-end">
-                                            <SubmitButton IsLoading="@isSaving" LoadingText="Se salvează..." Class="px-5 rounded-pill shadow-sm">
-                                                Salvează Modificările
-                                            </SubmitButton>
-                                        </div>
-                                    </div>
+                                        <MudItem xs="12" Class="d-flex justify-end mt-4">
+                                            <MudButton ButtonType="ButtonType.Submit" 
+                                                       Variant="Variant.Filled" 
+                                                       Color="Color.Primary" 
+                                                       Disabled="@_isSaving" 
+                                                       Class="px-8 rounded-pill fw-bold shadow-sm"
+                                                       Size="Size.Large">
+                                                @if (_isSaving)
+                                                {
+                                                    <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                                                    <span class="ms-2">Se salvează...</span>
+                                                }
+                                                else
+                                                {
+                                                    <span>Salvează Modificările</span>
+                                                }
+                                            </MudButton>
+                                        </MudItem>
+                                    </MudGrid>
                                 </EditForm>
                             }
-                        </div>
-                    </div>
+                        </MudItem>
+                    </MudGrid>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
 
 @code {
-    private UserProfileModel userProfile = new();
-    private bool isLoading = true;
-    private bool isSaving = false;
-    private string? successMessage;
-    private string? errorMessage;
+    private UserProfileModel _userProfile = new();
+    private bool _isLoading = true;
+    private bool _isSaving;
+    private string? _successMessage;
+    private string? _errorMessage;
     // URL-ul de bază trebuie să fie cel al API-ului (port 5062)
     private const string ApiBaseUrl = "http://localhost:5062"; 
 
@@ -156,65 +182,69 @@
 
     private async Task LoadProfile()
     {
-        isLoading = true;
+        _isLoading = true;
         try
         {
-            userProfile = await Http.GetFromJsonAsync<UserProfileModel>("api/auth/me") ?? new();
+            _userProfile = await Http.GetFromJsonAsync<UserProfileModel>("api/auth/me") ?? new();
         }
-        catch (Exception ex)
+        catch
         {
-            errorMessage = "Eroare la încărcarea profilului.";
+            _errorMessage = "Eroare la încărcarea profilului.";
         }
         finally
         {
-            isLoading = false;
+            _isLoading = false;
         }
     }
 
     private async Task SaveProfile()
     {
-        isSaving = true;
-        successMessage = null;
-        errorMessage = null;
+        _isSaving = true;
+        _successMessage = null;
+        _errorMessage = null;
 
         try
         {
             var response = await Http.PutAsJsonAsync("api/auth/profile", new
             {
-                FirstName = userProfile.FirstName,
-                LastName = userProfile.LastName,
-                PhoneNumber = userProfile.PhoneNumber,
-                Address = userProfile.Address
+                _userProfile.FirstName,
+                _userProfile.LastName,
+                _userProfile.PhoneNumber,
+                _userProfile.Address
             });
 
             if (response.IsSuccessStatusCode)
             {
-                successMessage = "Profilul a fost actualizat cu succes!";
+                _successMessage = "Profilul a fost actualizat cu succes!";
             }
             else
             {
-                errorMessage = "Nu s-a putut actualiza profilul.";
+                _errorMessage = "Nu s-a putut actualiza profilul.";
             }
         }
         catch(Exception ex)
         {
-            errorMessage = "Eroare: " + ex.Message;
+            _errorMessage = "Eroare: " + ex.Message;
         }
         finally
         {
-            isSaving = false;
+            _isSaving = false;
         }
     }
-
-    private async Task UploadProfilePicture(InputFileChangeEventArgs e)
+    
+    private async Task UploadProfilePictureContext(InputFileChangeEventArgs e)
     {
-        var file = e.File;
+        await UploadProfilePicture(e.File);
+    }
+
+    private async Task UploadProfilePicture(IBrowserFile file)
+    {
         if (file == null) return;
 
         // Limita de 5MB
         if (file.Size > 5120000)
         {
-            errorMessage = "Imaginea trebuie să fie mai mică de 5MB.";
+            _errorMessage = "Imaginea trebuie să fie mai mică de 5MB.";
             return;
         }
 
@@ -236,8 +266,8 @@
                     await LocalStorage.SetItemAsync("profilePictureUrl", result.FileUrl);
 
                     // Force image refresh by appending timestamp
-                    userProfile.ProfilePictureUrl = result.FileUrl + "?t=" + DateTime.Now.Ticks;
-                    successMessage = "Fotografia de profil a fost actualizată!";
+                    _userProfile.ProfilePictureUrl = result.FileUrl + "?t=" + DateTime.Now.Ticks;
+                    _successMessage = "Fotografia de profil a fost actualizată!";
                     
                     // Notificam NavMenu ca s-a schimbat ceva (pentru a reciti poza din LocalStorage)
                     if (AuthStateProvider is CustomAuthenticationStateProvider customAuth)
@@ -250,12 +280,12 @@
             }
             else
             {
-                errorMessage = "Eroare la încărcarea imaginii.";
+                _errorMessage = "Eroare la încărcarea imaginii.";
             }
         }
         catch(Exception ex)
         {
-            errorMessage = "Eroare: " + ex.Message;
+            _errorMessage = "Eroare: " + ex.Message;
         }
     }
 
