@@ -27,6 +27,11 @@
     <AlertMessage Message="@successMessage" Type="AlertMessage.AlertType.Success" />
     <AlertMessage Message="@errorMessage" Type="AlertMessage.AlertType.Danger" />
 
+    @if (filterDate.HasValue)
+    {
+        <CalendarView Appointments="FilteredAppointments.ToList()" TargetDate="filterDate.Value" />
+    }
+
     <DoctorStats Appointments="appointments" />
 
     <DoctorFilters 

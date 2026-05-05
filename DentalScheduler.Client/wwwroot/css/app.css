@@ -177,7 +177,7 @@ body {
 /* Navbar */
 .navbar {
     box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    background: linear-gradient(to right, #1b6ec2, #004d99) !important;
+    background: linear-gradient(to right, #009688, #00796B) !important;
 }
 
 .nav-link {

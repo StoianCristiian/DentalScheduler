@@ -22,4 +22,8 @@
       <ProjectReference Include="..\DentalScheduler.Infrastructure\DentalScheduler.Infrastructure.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="wwwroot\" />
+    </ItemGroup>
+
 </Project>

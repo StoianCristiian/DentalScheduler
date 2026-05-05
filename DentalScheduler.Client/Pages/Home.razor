@@ -3,48 +3,88 @@
 
 <PageTitle>Dental Scheduler - Home</PageTitle>
 
-<div class="container py-5 animate-fade-in">
-    <div class="row align-items-center mb-5">
-        <div class="col-lg-6">
-            <h1 class="display-4 fw-bold mb-3 ls-1">
-                Zâmbetul tău, <br />
-                <span class="text-gradient">Prioritatea noastră.</span>
-            </h1>
-            <p class="lead text-muted mb-4">
-                Programări stomatologice rapide și ușoare. Gestionează-ți vizitele la dentist într-un mod modern și eficient.
-            </p>
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="pt-8">
+    <MudGrid Class="mb-10 align-center">
+        <MudItem xs="12" md="6">
+            <MudText Typo="Typo.h2" Color="Color.Primary" Class="mb-4">
+                <b>Zâmbetul tău,<br />Prioritatea noastră.</b>
+            </MudText>
+            <MudText Typo="Typo.h6" Class="mb-6 mud-text-secondary">
+                Oferim servicii stomatologice de top în cabinete moderne, echipate cu tehnologie de ultimă generație. 
+                Găsește clinica potrivită și programează-te simplu și rapid.
+            </MudText>
             
-            <div class="d-flex gap-3">
+            <div class="d-flex gap-4">
                 @if (isAuthenticated)
                 {
                     @if (isDoctor)
                     {
-                        <a href="doctor-dashboard" class="btn btn-primary btn-lg shadow-sm px-4 btn-hover-effect">
-                            📋 Dashboard Medic
-                        </a>
+                        <MudButton Href="doctor-dashboard" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" StartIcon="@Icons.Material.Filled.Dashboard">
+                            Dashboard Medic
+                        </MudButton>
                     }
                     else
                     {
-                        <a href="appointments" class="btn btn-primary btn-lg shadow-sm px-4 btn-hover-effect">
-                            📅 Programările Mele
-                        </a>
+                        <MudButton Href="appointments" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" StartIcon="@Icons.Material.Filled.CalendarMonth">
+                            Programările Mele
+                        </MudButton>
                     }
                 }
                 else
                 {
-                    <a href="login" class="btn btn-primary btn-lg shadow-sm px-4 btn-hover-effect">Programează-te Acum</a>
-                    <a href="register" class="btn btn-outline-secondary btn-lg px-4 btn-hover-effect">Cont Nou</a>
+                    <MudButton Href="login" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large">Programează-te Acum</MudButton>
+                    <MudButton Href="register" Variant="Variant.Outlined" Color="Color.Secondary" Size="Size.Large">Cont Nou</MudButton>
                 }
             </div>
-        </div>
-        <div class="col-lg-6 d-none d-lg-block text-center">
-            <!-- Placeholder for hero image if you add one later -->
-            <div class="p-5 rounded-circle bg-light d-inline-block shadow-sm" style="width: 400px; height: 400px; display: flex !important; align-items: center; justify-content: center; font-size: 5rem;">
-                🦷
-            </div>
-        </div>
-    </div>
-</div>
+        </MudItem>
+        <MudItem xs="12" md="6" Class="d-flex justify-center">
+            <MudImage Src="Images/cabinet4.jpg" Elevation="25" Class="rounded-lg" ObjectFit="ObjectFit.Cover" Width="500" Height="400" />
+        </MudItem>
+    </MudGrid>
+
+    <MudText Typo="Typo.h3" Align="Align.Center" Class="mb-8 mt-16" Color="Color.Primary">Cabinetele Noastre</MudText>
+
+    <MudGrid Class="mb-16">
+        <MudItem xs="12" md="4">
+            <MudCard Elevation="4" Class="h-100 pa-2">
+                <MudCardMedia Image="Images/cabinet1.jpg" Height="250" />
+                <MudCardContent>
+                    <MudText Typo="Typo.h5" Class="mb-2"><strong>Dental Center - Central</strong></MudText>
+                    <MudText Typo="Typo.body2">Echipamente moderne și o echipă de specialiști dedicați sănătății tale orale, chiar în inima orașului.</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Primary">Vezi Detalii</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+        
+        <MudItem xs="12" md="4">
+            <MudCard Elevation="4" Class="h-100 pa-2">
+                <MudCardMedia Image="Images/cabinet2.jpg" Height="250" />
+                <MudCardContent>
+                    <MudText Typo="Typo.h5" Class="mb-2"><strong>Smile Clinic - Nord</strong></MudText>
+                    <MudText Typo="Typo.body2">Specializați în estetică dentară și implantologie, oferim tratamente premium într-o atmosferă relaxantă.</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Primary">Vezi Detalii</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+        
+        <MudItem xs="12" md="4">
+            <MudCard Elevation="4" Class="h-100 pa-2">
+                <MudCardMedia Image="Images/cabinet3.jpeg" Height="250" />
+                <MudCardContent>
+                    <MudText Typo="Typo.h5" Class="mb-2"><strong>Family Dent - Vest</strong></MudText>
+                    <MudText Typo="Typo.body2">Cabinet dedicat întregii familii, cu servicii de stomatologie pediatrică și ortodonție de înaltă calitate.</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Primary">Vezi Detalii</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
 
 @code {
     private bool isAuthenticated;

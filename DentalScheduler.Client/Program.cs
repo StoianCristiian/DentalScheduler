@@ -4,6 +4,7 @@ using DentalScheduler.Client;
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Authorization;
 using DentalScheduler.Client.Auth;
+using MudBlazor.Services;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -17,5 +18,6 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
+builder.Services.AddMudServices();
 
 await builder.Build().RunAsync();

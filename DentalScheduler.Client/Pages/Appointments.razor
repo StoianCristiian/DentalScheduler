@@ -7,6 +7,7 @@
 @using Blazored.LocalStorage
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
+@using MudBlazor
 @attribute [Authorize]
 @inject HttpClient Http
 @inject ILocalStorageService LocalStorage
@@ -18,16 +19,19 @@
 <div class="container mt-4 animate-fade-in">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="mb-0 fw-bold">📅 Programările Mele</h2>
+            <h2 class="mb-0 fw-bold d-flex align-items-center">
+                <MudIcon Icon="@Icons.Material.Filled.CalendarMonth" Color="Color.Primary" Size="Size.Large" Class="me-2" /> 
+                Programările Mele
+            </h2>
             <p class="text-muted mb-0">Gestionează istoricul și viitoarele tale vizite</p>
         </div>
         <div class="d-flex gap-2">
-            <button class="btn btn-outline-primary shadow-sm" @onclick="ShowSmartModal">
-                <i class="bi bi-lightbulb-fill me-2"></i> Recomandare Smart
-            </button>
-            <button class="btn btn-primary btn-hover-effect shadow-sm" @onclick="ShowModal">
-                <i class="bi bi-plus-lg me-2"></i> Programare Nouă
-            </button>
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="ShowSmartModal" Class="rounded-pill px-4 fw-bold">
+                <MudIcon Icon="@Icons.Material.Filled.Lightbulb" Class="me-2" /> Recomandare Smart
+            </MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ShowModal" Class="rounded-pill px-4 fw-bold">
+                <MudIcon Icon="@Icons.Material.Filled.Add" Class="me-2" /> Programare Nouă
+            </MudButton>
         </div>
     </div>
 
@@ -75,8 +79,8 @@
                                 <tr>
                                     <td class="ps-4 py-3 fw-semibold">
                                         <div class="d-flex align-items-center">
-                                            <div class="icon-square bg-light text-primary rounded-3 me-3 p-2">
-                                                <i class="bi bi-calendar-event"></i>
+                                            <div class="d-flex align-items-center justify-content-center rounded-3 me-3" style="width: 36px; height: 36px; background-color: #E0F2F1; color: #00796B;">
+                                                <MudIcon Icon="@Icons.Material.Filled.Event" Size="Size.Small" />
                                             </div>
                                             @appt.StartAt.ToShortDateString()
                                         </div>
@@ -86,7 +90,7 @@
                                         <div class="d-flex align-items-center">
                                            @if (!string.IsNullOrEmpty(appt.DentistProfilePictureUrl))
                                            {
-                                               <img src="@GetFullImageUrl(appt.DentistProfilePictureUrl)" 
+                                               <img src="@GetFullImageUrl(appt.DentistProfilePictureUrl)"
                                                     class="rounded-circle me-2 border" 
                                                     style="width: 32px; height: 32px; object-fit: cover;" 
                                                     alt="Dr." />
@@ -103,24 +107,22 @@
                                     <td class="py-3 pe-4 text-end">
                                         @if (appt.Status == 1) // Price set by doctor - Patient chooses payment method
                                         {
-                                            <button class="btn btn-success btn-sm shadow-sm"
-                                                    @onclick="() => OpenPaymentModal(appt)"
-                                                    disabled="@(processingId == appt.Id)">
+                                            <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small" OnClick="@(() => OpenPaymentModal(appt))" Disabled="@(processingId == appt.Id)" Class="rounded-pill px-3 shadow-none">
                                                 @if (processingId == appt.Id)
                                                 { <span class="spinner-border spinner-border-sm me-1"></span> }
-                                                <i class="bi bi-credit-card me-1"></i> Confirmă Prezența
-                                            </button>
+                                                <MudIcon Icon="@Icons.Material.Filled.Payment" Size="Size.Small" Class="me-1" /> Confirmă Prezența
+                                            </MudButton>
                                         }
                                         else if (appt.Status == 4) // Confirmed and paid
                                         {
                                             <span class="badge rounded-pill px-3 py-2 bg-success bg-opacity-10 border border-success text-success">
-                                                ✅ Confirmat
+                                                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Class="me-1 align-text-bottom" /> Confirmat
                                             </span>
                                         }
                                         else
                                         {
                                             <span class="badge rounded-pill px-3 py-2 @GetStatusClass(appt.Status)">
-                                                @GetStatusLabel(appt.Status)
+                                                <MudIcon Icon="@GetStatusIcon(appt.Status)" Size="Size.Small" Class="me-1 align-text-bottom" /> @GetStatusLabel(appt.Status)
                                             </span>
                                         }
                                     </td>
@@ -281,8 +283,8 @@
                                     <i class="bi bi-credit-card fs-4 text-primary"></i>
                                 </div>
                                 <div class="flex-grow-1">
-                                    <strong class="d-block">💳 Plată cu Stripe</strong>
-                                    <small class="text-muted">Cardă de credit/debit online</small>
+                                    <strong class="d-block">Plată cu Stripe</strong>
+                                    <small class="text-muted">Card de credit/debit online</small>
                                 </div>
                                 @if (processingId == paymentAppt.Id)
                                 {
@@ -305,7 +307,7 @@
                                     <i class="bi bi-cash-coin fs-4 text-success"></i>
                                 </div>
                                 <div class="flex-grow-1">
-                                    <strong class="d-block">💰 Plată la Cabinet</strong>
+                                    <strong class="d-block">Plată la Cabinet</strong>
                                     <small class="text-muted">Cash sau POS la sosire</small>
                                 </div>
                                 @if (processingId == paymentAppt.Id)
@@ -329,7 +331,7 @@
                                     <i class="bi bi-x-circle fs-4 text-danger"></i>
                                 </div>
                                 <div class="flex-grow-1">
-                                    <strong class="d-block">❌ Respinge Programarea</strong>
+                                    <strong class="d-block">Respinge Programarea</strong>
                                     <small class="text-muted">Nu pot ajunge la programare</small>
                                 </div>
                                 @if (processingId == paymentAppt.Id)
@@ -504,6 +506,7 @@
     {
         if (string.IsNullOrEmpty(relativeUrl)) return "";
         if (relativeUrl.StartsWith("http")) return relativeUrl;
+        // Prefix with ApiBaseUrl if it's a relative path to the API, but AWS S3 URLs might lack this and be relative to bucket or API route if proxied
         return $"{ApiBaseUrl}{relativeUrl}";
     }
 
@@ -610,13 +613,24 @@
 
     private string GetStatusLabel(int status) => status switch
     {
-        0 => "⏳ În așteptare",
+        0 => "În așteptare",
         1 => "Așteaptă confirmarea ta",
-        2 => "❌ Respins",
-        3 => "🚫 Anulat",
-        4 => "👍 Confirmat",
-        5 => "✅ Finalizat",
+        2 => "Respins",
+        3 => "Anulat",
+        4 => "Confirmat",
+        5 => "Finalizat",
         _ => "Necunoscut"
+    };
+
+    private string GetStatusIcon(int status) => status switch
+    {
+        0 => Icons.Material.Filled.HourglassEmpty,
+        1 => Icons.Material.Filled.NotificationImportant,
+        2 => Icons.Material.Filled.Cancel,
+        3 => Icons.Material.Filled.Block,
+        4 => Icons.Material.Filled.ThumbUp,
+        5 => Icons.Material.Filled.CheckCircle,
+        _ => Icons.Material.Filled.HelpOutline
     };
 
     private void ShowModal() => showModal = true;
