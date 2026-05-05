@@ -1,79 +1,115 @@
 ﻿@page "/register"
 @using System.ComponentModel.DataAnnotations
+@using MudBlazor
 @inject HttpClient Http
 @inject NavigationManager Navigation
 
 <PageTitle>Înregistrare</PageTitle>
 
-<div class="row justify-content-center mt-5">
-    <div class="col-md-6">
-        <div class="card shadow-lg border-0 animate-fade-in">
-            <div class="card-header text-center py-4 bg-gradient-primary">
-                <h4 class="mb-0 fw-bold">🚀 Alătură-te nouă!</h4>
-                <p class="mb-0 small opacity-75 mt-1">Creează-ți contul în câteva secunde</p>
-            </div>
-            <div class="card-body p-4">
-                <AlertMessage Message="@errorMessage" Type="AlertMessage.AlertType.Danger" />
-
-                @if (showSuccess)
-                {
-                    <div class="text-center py-4">
-                        <div class="display-1 text-success mb-3">🎉</div>
-                        <h4 class="fw-bold text-success">Cont creat cu succes!</h4>
-                        <p class="text-muted">Acum te poți autentifica în aplicație.</p>
-                        <a href="login" class="btn btn-primary px-4 py-2 mt-2">Mergi la Autentificare</a>
-                    </div>
-                }
-                else
-                {
-                    <EditForm Model="@registerModel" OnValidSubmit="HandleRegister">
-                        <DataAnnotationsValidator />
-                        
-                        <div class="row">
-                            <div class="col-md-6">
-                                <FormField Label="Prenume" ValidationFor="@(() => registerModel.FirstName)">
-                                    <InputText class="form-control" @bind-Value="registerModel.FirstName" placeholder="Ion" />
-                                </FormField>
-                            </div>
-                            <div class="col-md-6">
-                                <FormField Label="Nume" ValidationFor="@(() => registerModel.LastName)">
-                                    <InputText class="form-control" @bind-Value="registerModel.LastName" placeholder="Popescu" />
-                                </FormField>
-                            </div>
-                        </div>
-
-                        <FormField Label="Email" ValidationFor="@(() => registerModel.Email)">
-                            <InputText class="form-control" @bind-Value="registerModel.Email" placeholder="ion.popescu@example.com" />
-                        </FormField>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <FormField Label="Parola" ValidationFor="@(() => registerModel.Password)">
-                                    <InputText type="password" class="form-control" @bind-Value="registerModel.Password" placeholder="••••••••" />
-                                </FormField>
-                            </div>
-                            <div class="col-md-6">
-                                <FormField Label="Confirmă Parola" ValidationFor="@(() => registerModel.ConfirmPassword)">
-                                    <InputText type="password" class="form-control" @bind-Value="registerModel.ConfirmPassword" placeholder="••••••••" />
-                                </FormField>
-                            </div>
-                        </div>
-
-                        <div class="mt-4 mb-3">
-                            <SubmitButton IsLoading="@isLoading" LoadingText="Se creează contul...">
-                                Creează Cont
-                            </SubmitButton>
-                        </div>
-                    </EditForm>
-                    
-                    <div class="text-center mt-4">
-                        <p class="text-muted mb-0">Ai deja cont? <a href="login" class="fw-bold text-decoration-none">Intră în cont</a></p>
-                    </div>
-                }
-            </div>
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-10 mb-10 animate-fade-in">
+    <MudPaper Elevation="4" Class="pa-8 rounded-lg">
+        <div class="d-flex flex-column align-center mb-6">
+            <MudIcon Icon="@Icons.Material.Filled.RocketLaunch" Color="Color.Primary" Size="Size.Large" Class="mb-2" />
+            <MudText Typo="Typo.h4" Class="fw-bold text-center">Alătură-te nouă!</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Default" Class="opacity-75 text-center mt-1">Creează-ți contul în câteva secunde</MudText>
         </div>
-    </div>
-</div>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4">@errorMessage</MudAlert>
+        }
+
+        @if (showSuccess)
+        {
+            <div class="text-center py-6">
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Style="font-size: 6rem;" Class="mb-4" />
+                <MudText Typo="Typo.h5" Class="fw-bold text-success mb-2">Cont creat cu succes!</MudText>
+                <MudText Typo="Typo.body1" Class="text-muted mb-6">Acum te poți autentifica în aplicație.</MudText>
+                <MudButton Href="login" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" Class="rounded-pill px-8">Mergi la Autentificare</MudButton>
+            </div>
+        }
+        else
+        {
+            <EditForm Model="@registerModel" OnValidSubmit="HandleRegister">
+                <DataAnnotationsValidator />
+                
+                <MudGrid>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="registerModel.FirstName" 
+                                      Label="Prenume" 
+                                      Variant="Variant.Outlined" 
+                                      Margin="Margin.Dense"
+                                      For="@(() => registerModel.FirstName)" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="registerModel.LastName" 
+                                      Label="Nume" 
+                                      Variant="Variant.Outlined" 
+                                      Margin="Margin.Dense"
+                                      For="@(() => registerModel.LastName)" />
+                    </MudItem>
+                </MudGrid>
+
+                <MudTextField @bind-Value="registerModel.Email" 
+                              Label="Email" 
+                              Variant="Variant.Outlined" 
+                              Margin="Margin.Normal"
+                              Adornment="Adornment.Start" 
+                              AdornmentIcon="@Icons.Material.Filled.Email"
+                              For="@(() => registerModel.Email)" />
+
+                <MudGrid>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="registerModel.Password" 
+                                      Label="Parola" 
+                                      Variant="Variant.Outlined" 
+                                      Margin="Margin.Dense"
+                                      InputType="InputType.Password"
+                                      Adornment="Adornment.Start" 
+                                      AdornmentIcon="@Icons.Material.Filled.Lock"
+                                      For="@(() => registerModel.Password)" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="registerModel.ConfirmPassword" 
+                                      Label="Confirmă Parola" 
+                                      Variant="Variant.Outlined" 
+                                      Margin="Margin.Dense"
+                                      InputType="InputType.Password"
+                                      Adornment="Adornment.Start" 
+                                      AdornmentIcon="@Icons.Material.Filled.LockClock"
+                                      For="@(() => registerModel.ConfirmPassword)" />
+                    </MudItem>
+                </MudGrid>
+
+                <div class="d-flex justify-center mt-6 mb-4">
+                    <MudButton ButtonType="ButtonType.Submit" 
+                               Variant="Variant.Filled" 
+                               Color="Color.Primary" 
+                               Size="Size.Large" 
+                               FullWidth="true" 
+                               Class="rounded-pill fw-bold"
+                               Disabled="@isLoading">
+                        @if (isLoading)
+                        {
+                            <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                            <MudText Class="ms-2">Se creează contul...</MudText>
+                        }
+                        else
+                        {
+                            <MudText>Creează Cont</MudText>
+                        }
+                    </MudButton>
+                </div>
+            </EditForm>
+            
+            <div class="text-center mt-6">
+                <MudText Typo="Typo.body2" Class="text-muted">
+                    Ai deja cont? <MudLink Href="login" Color="Color.Primary" Underline="Underline.Always" Class="fw-bold">Intră în cont</MudLink>
+                </MudText>
+            </div>
+        }
+    </MudPaper>
+</MudContainer>
 
 @code {
     private RegisterModel registerModel = new();

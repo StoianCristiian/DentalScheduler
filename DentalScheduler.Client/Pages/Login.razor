@@ -2,6 +2,7 @@
 @using System.ComponentModel.DataAnnotations
 @using Blazored.LocalStorage
 @using DentalScheduler.Client.Auth
+@using MudBlazor
 @inject HttpClient Http
 @inject NavigationManager Navigation
 @inject ILocalStorageService LocalStorage
@@ -9,41 +10,69 @@
 
 <PageTitle>Autentificare</PageTitle>
 
-<div class="row justify-content-center mt-5">
-    <div class="col-md-4">
-        <div class="card shadow-lg border-0 animate-fade-in">
-            <div class="card-header text-center py-4">
-                <h4 class="mb-0 fw-bold">👋 Bine ai revenit!</h4>
-                <p class="mb-0 small opacity-75 mt-1">Introdu datele pentru a te autentifica</p>
-            </div>
-            <div class="card-body p-4">
-                <AlertMessage Message="@errorMessage" Type="AlertMessage.AlertType.Danger" />
-
-                <EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
-                    <DataAnnotationsValidator />
-                    
-                    <FormField Label="Email" ValidationFor="@(() => loginModel.Email)">
-                        <InputText class="form-control" @bind-Value="loginModel.Email" placeholder="name@example.com" />
-                    </FormField>
-
-                    <FormField Label="Parola" ValidationFor="@(() => loginModel.Password)">
-                        <InputText type="password" class="form-control" @bind-Value="loginModel.Password" placeholder="••••••••" />
-                    </FormField>
-                    
-                    <div class="mt-4 mb-3">
-                        <SubmitButton IsLoading="@isLoading" LoadingText="Se autentifică...">
-                            Autentifică-te
-                        </SubmitButton>
-                    </div>
-                </EditForm>
-
-                <div class="text-center mt-4">
-                    <p class="text-muted mb-0">Nu ai cont? <a href="register" class="fw-bold text-decoration-none">Creează unul acum</a></p>
-                </div>
-            </div>
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16 animate-fade-in">
+    <MudPaper Elevation="4" Class="pa-8 rounded-lg">
+        <div class="d-flex flex-column align-center mb-6">
+            <MudIcon Icon="@Icons.Material.Filled.LocalHospital" Color="Color.Primary" Size="Size.Large" Class="mb-2" />
+            <MudText Typo="Typo.h4" Class="fw-bold text-center">👋 Bine ai revenit!</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Default" Class="opacity-75 text-center mt-1">Introdu datele pentru a te autentifica pe platformă</MudText>
         </div>
-    </div>
-</div>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4">@errorMessage</MudAlert>
+        }
+
+        <EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
+            <DataAnnotationsValidator />
+
+            <MudTextField @bind-Value="loginModel.Email" 
+                          Label="Email" 
+                          Variant="Variant.Outlined" 
+                          Margin="Margin.Normal"
+                          Adornment="Adornment.Start" 
+                          AdornmentIcon="@Icons.Material.Filled.Email"
+                          For="@(() => loginModel.Email)"
+                          Immediate="true" />
+
+            <MudTextField @bind-Value="loginModel.Password" 
+                          Label="Parola" 
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Normal"
+                          InputType="InputType.Password"
+                          Adornment="Adornment.Start" 
+                          AdornmentIcon="@Icons.Material.Filled.Lock"
+                          For="@(() => loginModel.Password)"
+                          Immediate="true" />
+            
+            <div class="d-flex justify-center mt-6 mb-4">
+                <MudButton ButtonType="ButtonType.Submit" 
+                           Variant="Variant.Filled" 
+                           Color="Color.Primary" 
+                           Size="Size.Large" 
+                           FullWidth="true" 
+                           Class="rounded-pill fw-bold"
+                           Disabled="@isLoading">
+                    @if (isLoading)
+                    {
+                        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                        <MudText Class="ms-2">Se autentifică...</MudText>
+                    }
+                    else
+                    {
+                        <MudText>Autentifică-te</MudText>
+                    }
+                </MudButton>
+            </div>
+        </EditForm>
+
+        <div class="text-center mt-6">
+            <MudText Typo="Typo.body2" Class="text-muted">
+                Nu ai cont? <MudLink Href="register" Color="Color.Primary" Underline="Underline.Always" Class="fw-bold">Creează unul acum</MudLink>
+            </MudText>
+        </div>
+    </MudPaper>
+</MudContainer>
 
 @code {
     private LoginModel loginModel = new();
