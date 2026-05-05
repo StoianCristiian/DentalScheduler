@@ -62,10 +62,18 @@ public class AppointmentsController : ControllerBase
     }
 
     // GET api/appointments/recommend
+    [AllowAnonymous]
     [HttpGet("recommend")]
     public async Task<ActionResult<SchedulingResponseDto>> GetRecommendations([FromQuery] GetScheduleRecommendationsQuery query)
     {
-        var response = await _mediator.Send(query);
-        return Ok(response);
+        try
+        {
+            var response = await _mediator.Send(query);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ex.ToString());
+        }
     }
 }

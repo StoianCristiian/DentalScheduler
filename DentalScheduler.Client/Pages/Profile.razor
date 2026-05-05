@@ -233,10 +233,10 @@
                 if (result != null)
                 {
                     // Salvam URL-ul in LocalStorage pentru NavMenu si alte componente
-                    await LocalStorage.SetItemAsync("profilePictureUrl", result.Url);
+                    await LocalStorage.SetItemAsync("profilePictureUrl", result.FileUrl);
 
                     // Force image refresh by appending timestamp
-                    userProfile.ProfilePictureUrl = result.Url + "?t=" + DateTime.Now.Ticks;
+                    userProfile.ProfilePictureUrl = result.FileUrl + "?t=" + DateTime.Now.Ticks;
                     successMessage = "Fotografia de profil a fost actualizată!";
                     
                     // Notificam NavMenu ca s-a schimbat ceva (pentru a reciti poza din LocalStorage)
@@ -262,7 +262,13 @@
     private string GetFullImageUrl(string? relativeUrl)
     {
         if (string.IsNullOrEmpty(relativeUrl)) return "";
-        if (relativeUrl.StartsWith("http")) return relativeUrl;
+        
+        // Remove query parameters like ?t=123 from the check
+        var baseUrl = relativeUrl.Split('?')[0];
+
+        if (baseUrl.StartsWith("http")) return relativeUrl;
+        
+        // În cazul în care serverul returnează doar o cale relativă (din trecut)
         return $"{ApiBaseUrl}{relativeUrl}";
     }
 
@@ -283,5 +289,5 @@
         public string ProfilePictureUrl { get; set; } = "";
     }
 
-    public class UploadResponse { public string Url { get; set; } = ""; }
+    public class UploadResponse { public string FileUrl { get; set; } = ""; }
 }

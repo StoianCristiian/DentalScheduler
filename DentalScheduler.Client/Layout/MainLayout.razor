@@ -1,5 +1,10 @@
 ﻿@inherits LayoutComponentBase
 
+<MudThemeProvider Theme="DentalTheme" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
 <div class="page">
     <main>
         <NavMenu />
@@ -9,3 +14,21 @@
         </article>
     </main>
 </div>
+
+@code {
+    MudTheme DentalTheme = new MudTheme()
+    {
+        PaletteLight = new PaletteLight()
+        {
+            Primary = Colors.Teal.Default,
+            Secondary = Colors.Teal.Lighten2,
+            AppbarBackground = Colors.Teal.Default,
+            TextPrimary = Colors.Gray.Darken3
+        },
+        PaletteDark = new PaletteDark()
+        {
+            Primary = Colors.Teal.Lighten1,
+            Secondary = Colors.Teal.Lighten3
+        }
+    };
+}

@@ -14,12 +14,23 @@ namespace DentalScheduler.Infrastructure.Services
         }
         public async Task<SchedulingResponseDto?> GetRecommendationsAsync(SchedulingRequestDto request)
         {
-            var response = await _httpClient.PostAsJsonAsync("api/v1/schedule/recommend", request);
-            if (response.IsSuccessStatusCode)
+            try
             {
-                return await response.Content.ReadFromJsonAsync<SchedulingResponseDto>();
+                var response = await _httpClient.PostAsJsonAsync("api/v1/schedule/recommend", request);
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<SchedulingResponseDto>();
+                }
+
+                var errorContext = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"[SmartSchedulingService] AI Service returned non-success status code: {response.StatusCode} Payload: {errorContext}");
+                return null;
             }
-            return null;
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[SmartSchedulingService] Error communicating with AI service: {ex.Message}");
+                return new SchedulingResponseDto { Proposals = new System.Collections.Generic.List<ProposedSlotDto>() };
+            }
         }
     }
 }

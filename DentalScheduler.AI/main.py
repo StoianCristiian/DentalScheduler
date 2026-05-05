@@ -123,6 +123,10 @@ def recommend_schedule(request: SchedulingRequest):
                     elif prefs.time_of_day == 'evening' and 17 <= hour <= 20:
                         score += 30
                         reason = "Se potriveste cu preferinta de seara."
+                    elif prefs.time_of_day:
+                         # E alt interval al zilei, nu îl refuzăm total, dar îi dăm un scor penalizat profund
+                         score -= 20
+                         reason = "Disponibil, dar în afara perioadei preferate a zilei."
                         
                     # Verificare fereastra de zile (date start/end)
                     if prefs.preferred_date_start and prefs.preferred_date_end:
@@ -131,9 +135,12 @@ def recommend_schedule(request: SchedulingRequest):
                         pref_end = prefs.preferred_date_end.replace(tzinfo=None)
                         slot_start_naive = slot_start.replace(tzinfo=None)
 
-                        if pref_start <= slot_start_naive <= pref_end:
+                        if pref_start.date() <= slot_start_naive.date() <= pref_end.date():
                             score += 20
-                            reason += " In perioada dorita."
+                            reason += " În perioada dorită."
+                        else:
+                            score -= 30
+                            reason += " În afara intervalului de zile dorit."
                             
                     # Daca e urgenta, cel mai apropiat slot primeste scor masiv
                     if prefs.is_emergency:
