@@ -8,8 +8,14 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["DentalScheduler.Api/DentalScheduler.Api.csproj", "DentalScheduler.Api/"]
+COPY ["DentalScheduler.Application/DentalScheduler.Application.csproj", "DentalScheduler.Application/"]
+COPY ["DentalScheduler.Domain/DentalScheduler.Domain.csproj", "DentalScheduler.Domain/"]
+COPY ["DentalScheduler.Infrastructure/DentalScheduler.Infrastructure.csproj", "DentalScheduler.Infrastructure/"]
 RUN dotnet restore "DentalScheduler.Api/DentalScheduler.Api.csproj"
-COPY . .
+COPY ["DentalScheduler.Api/", "DentalScheduler.Api/"]
+COPY ["DentalScheduler.Application/", "DentalScheduler.Application/"]
+COPY ["DentalScheduler.Domain/", "DentalScheduler.Domain/"]
+COPY ["DentalScheduler.Infrastructure/", "DentalScheduler.Infrastructure/"]
 WORKDIR "/src/DentalScheduler.Api"
 RUN dotnet build "./DentalScheduler.Api.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
@@ -18,6 +24,7 @@ ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish "./DentalScheduler.Api.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
+USER app
 WORKDIR /app
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "DentalScheduler.Api.dll"]
