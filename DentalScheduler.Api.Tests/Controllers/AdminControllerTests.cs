@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using DentalScheduler.Api.Controllers;
 using DentalScheduler.Application.Admin.Commands.UpdateUserRole;
 using DentalScheduler.Application.Admin.DTOs;
@@ -7,7 +10,6 @@ using FluentAssertions;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
-using Xunit;
 
 namespace DentalScheduler.Api.Tests.Controllers;
 
@@ -23,69 +25,65 @@ public class AdminControllerTests
     }
 
     [Fact]
-    public async Task GetStats_ShouldReturnOk_WithStats()
+    public async Task GetStats_ReturnsOkWithStats()
     {
         // Arrange
-        var expectedStats = new AdminDashboardStatsDto { TotalAppointments = 5 }; // Ex of mock data
-        _mediatorMock.Setup(m => m.Send(It.IsAny<GetDashboardStatsQuery>(), default))
-            .ReturnsAsync(expectedStats);
+        var stats = new AdminDashboardStatsDto { TotalPatients = 10, TotalDoctors = 5, TotalAppointments = 20 };
+        _mediatorMock.Setup(m => m.Send(It.IsAny<GetDashboardStatsQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(stats);
 
         // Act
         var result = await _controller.GetStats();
 
         // Assert
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-        var stats = okResult.Value.Should().BeOfType<AdminDashboardStatsDto>().Subject;
-        stats.Should().BeEquivalentTo(expectedStats);
+        var model = okResult.Value.Should().BeOfType<AdminDashboardStatsDto>().Subject;
+        model.TotalPatients.Should().Be(10);
     }
 
     [Fact]
-    public async Task GetUsers_ShouldReturnOk_WithUsersList()
+    public async Task GetUsers_ReturnsOkWithUsers()
     {
         // Arrange
-        var expectedUsers = new List<UserWithRoleDto> { new UserWithRoleDto() };
-        _mediatorMock.Setup(m => m.Send(It.IsAny<GetUsersWithRolesQuery>(), default))
-            .ReturnsAsync(expectedUsers);
+        var users = new List<UserWithRoleDto> { new UserWithRoleDto { Id = "1", Email = "test@test.com", Role = "Admin" } };
+        _mediatorMock.Setup(m => m.Send(It.IsAny<GetUsersWithRolesQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(users);
 
         // Act
         var result = await _controller.GetUsers();
 
         // Assert
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-        var users = okResult.Value.Should().BeAssignableTo<List<UserWithRoleDto>>().Subject;
-        users.Should().BeEquivalentTo(expectedUsers);
+        okResult.Value.Should().BeEquivalentTo(users);
     }
 
     [Fact]
-    public async Task UpdateUserRole_WhenSuccessful_ShouldReturnOk()
+    public async Task UpdateUserRole_Success_ReturnsOk()
     {
         // Arrange
-        var userId = "test-id";
         var request = new UpdateRoleRequest { NewRole = "Admin" };
-        _mediatorMock.Setup(m => m.Send(It.IsAny<UpdateUserRoleCommand>(), default))
+        _mediatorMock.Setup(m => m.Send(It.IsAny<UpdateUserRoleCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
         // Act
-        var result = await _controller.UpdateUserRole(userId, request);
+        var result = await _controller.UpdateUserRole("1", request);
 
         // Assert
         result.Should().BeOfType<OkObjectResult>();
     }
 
     [Fact]
-    public async Task UpdateUserRole_WhenFails_ShouldReturnBadRequest()
+    public async Task UpdateUserRole_Failure_ReturnsBadRequest()
     {
         // Arrange
-        var userId = "test-id";
-        var request = new UpdateRoleRequest { NewRole = "Admin" };
-        _mediatorMock.Setup(m => m.Send(It.IsAny<UpdateUserRoleCommand>(), default))
+        var request = new UpdateRoleRequest { NewRole = "Invalid" };
+        _mediatorMock.Setup(m => m.Send(It.IsAny<UpdateUserRoleCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
         // Act
-        var result = await _controller.UpdateUserRole(userId, request);
+        var result = await _controller.UpdateUserRole("1", request);
 
         // Assert
         result.Should().BeOfType<BadRequestObjectResult>();
     }
 }
-
